@@ -134,12 +134,12 @@ const Home = ({ subdomain = config.tld }) => {
   }
 
   const connect = async () => {
-    if (!web3) {
+    if (!window.ethereum) {
       toast.error('Wallet not found')
       return
     }
     try {
-      const ethAccounts = await web3.currentProvider.request({ method: 'eth_requestAccounts' })
+      const ethAccounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
 
       if (ethAccounts.length >= 2) {
         return toast.info('Please connect using only one account')
