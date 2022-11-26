@@ -27,11 +27,17 @@ contract D1DC is ERC721, Pausable, Ownable {
         uint32 timeUpdated;
         uint256 lastPrice;
         string url;
+        string prev;
+        string next;
     }
 
     mapping(bytes32 => NameRecord) public nameRecords;
 
     string public lastRented;
+
+    string public lastCreated;
+
+    bytes32[] public keys;
 
     event NameRented(string indexed name, address indexed renter, uint256 price, string url);
     event URLUpdated(string indexed name, address indexed renter, string oldUrl, string newUrl);
@@ -50,6 +56,19 @@ contract D1DC is ERC721, Pausable, Ownable {
         rentalPeriod = _rentalPeriod;
         priceMultiplier = _priceMultiplier;
         revenueAccount = _revenueAccount;
+    }
+
+    function numRecords() public returns (uint256){
+        return keys.length;
+    }
+
+    function getRecords(uint256 start, uint256 end) public view returns (bytes32[] memory){
+        require(end > start, "D1DC: end must be greater than start");
+        bytes32[] memory slice = new bytes32[](end - start);
+        for (uint256 i = start; i < end; i++) {
+            slice[i - start] = keys[i];
+        }
+        return slice;
     }
 
     // admin functions
@@ -110,6 +129,9 @@ contract D1DC is ERC721, Pausable, Ownable {
         if (_exists(tokenId)) {
             _safeTransfer(originalOwner, msg.sender, tokenId, "");
         } else {
+            nameRecords[keccak256(bytes(lastCreated))].next = name;
+            nameRecord.prev = lastCreated;
+            lastCreated = name;
             _safeMint(msg.sender, tokenId);
         }
 
@@ -140,6 +162,7 @@ contract D1DC is ERC721, Pausable, Ownable {
 
     function withdraw() external {
         require(msg.sender == owner() || msg.sender == revenueAccount, "D1DC: must be owner or revenue account");
-        revenueAccount.call{value : address(this).balance}("");
+        (bool success,) = revenueAccount.call{value : address(this).balance}("");
+        require(success, "D1DC: failed to withdraw");
     }
 }
