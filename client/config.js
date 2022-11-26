@@ -6,6 +6,7 @@ const config = {
   explorer: process.env.EXPLORER_URL || 'https://explorer.harmony.one/#/tx/{{txId}}',
   defaultRPC: process.env.DEFAULT_RPC || 'https://api.harmony.one',
   tld: process.env.TLD || '.1.country',
+  tldLink: process.env.TLD_LINK || '1.country',
   chainParameters: process.env.CHAIN_PARAMETERS
     ? JSON.parse(process.env.CHAIN_PARAMETERS)
     : {

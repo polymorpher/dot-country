@@ -267,7 +267,7 @@ const Home = ({ subdomain = config.tld }) => {
           <Banner>
             <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
               <SmallTextGrey>last purchase</SmallTextGrey>
-              <BaseText>{parameters.lastRented}{config.tld} ({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
+              <a href={`https://${parameters.lastRented}${config.tld}`} target='_blank' rel='noreferrer'><BaseText>{parameters.lastRented}{config.tld}</BaseText></a> <BaseText>({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
             </Row>
             <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
               <SmallTextGrey>{humanD(Date.now() - lastRentedRecord.timeUpdated)} ago</SmallTextGrey>
@@ -279,7 +279,7 @@ const Home = ({ subdomain = config.tld }) => {
         </FlexRow>
         <DescLeft>
           <BaseText>How it works:</BaseText>
-          <BaseText>- go to any *.1.country website (e.g. <a href='https://crypto.1.country' target='_blank' rel='noreferrer'>crypto.1.country</a>) </BaseText>
+          <BaseText>- go to any *.1.country website (e.g. <a href='https://all.1.country' target='_blank' rel='noreferrer'>all.1.country</a>) </BaseText>
           <BaseText>- if you are the first, pay {parameters?.baseRentalPrice?.formatted || '100'} ONE to claim the page for {humanD(parameters?.rentalPeriod) || '3 months'}</BaseText>
           <BaseText>- otherwise, pay double the last person paid to claim the page</BaseText>
           <BaseText>- once claimed, you can embed any tweet on your page!</BaseText>
@@ -294,7 +294,7 @@ const Home = ({ subdomain = config.tld }) => {
         <Banner>
           <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
             <SmallTextGrey>last purchase</SmallTextGrey>
-            <BaseText>{parameters.lastRented}{config.tld} ({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
+            <a href={`https://${parameters.lastRented}${config.tld}`} target='_blank' rel='noreferrer'><BaseText>{parameters.lastRented}{config.tld}</BaseText></a> <BaseText>({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
           </Row>
           <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
             <SmallTextGrey>{humanD(Date.now() - lastRentedRecord.timeUpdated)} ago</SmallTextGrey>
@@ -303,9 +303,11 @@ const Home = ({ subdomain = config.tld }) => {
         </Banner>}
       <FlexRow style={{ alignItems: 'baseline', marginTop: 120 }}>
         <Title style={{ margin: 0 }}>{name}</Title>
-        <BaseText style={{ fontSize: 12, color: 'grey', marginLeft: '16px' }}>
-          {subdomain}
-        </BaseText>
+        <a href={`https://${config.tldLink}`} target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
+          <BaseText style={{ fontSize: 12, color: 'grey', marginLeft: '16px', textDecoration: 'none' }}>
+            {subdomain}
+          </BaseText>
+        </a>
       </FlexRow>
       {record?.renter &&
         <DescResponsive style={{ marginTop: 32 }}>
@@ -392,6 +394,8 @@ const Home = ({ subdomain = config.tld }) => {
           <SmallTextGrey>Your address: {address}</SmallTextGrey>
         </>
       )}
+      <SmallTextGrey>Learn more about the future of domain name services: <a href='https://harmony.one/domains' target='_blank' rel='noreferrer'>RADICAL Market for Internet Domains</a></SmallTextGrey>
+      <div style={{ height: 200 }} />
     </Container>
   )
 }
