@@ -267,12 +267,16 @@ const Home = ({ subdomain = config.tld }) => {
           <Banner>
             <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
               <SmallTextGrey>last purchase</SmallTextGrey>
-              <a href={`https://${parameters.lastRented}${config.tld}`} target='_blank' rel='noreferrer'><BaseText>{parameters.lastRented}{config.tld}</BaseText></a> <BaseText>({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
+              <a
+                href={`https://${parameters.lastRented}${config.tld}`} target='_blank' rel='noreferrer'
+                style={{ color: 'grey', textDecoration: 'none' }}
+              ><BaseText>{parameters.lastRented}{config.tld}</BaseText>
+              </a> <BaseText>({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
             </Row>
-            <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
-              <SmallTextGrey>{humanD(Date.now() - lastRentedRecord.timeUpdated)} ago</SmallTextGrey>
-              <SmallTextGrey>by {lastRentedRecord.renter}</SmallTextGrey>
-            </Row>
+            {/* <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}> */}
+            {/*  <SmallTextGrey>{humanD(Date.now() - lastRentedRecord.timeUpdated)} ago</SmallTextGrey> */}
+            {/*  <SmallTextGrey>by {lastRentedRecord.renter}</SmallTextGrey> */}
+            {/* </Row> */}
           </Banner>}
         <FlexRow style={{ alignItems: 'baseline', marginTop: 120 }}>
           <Title style={{ margin: 0 }}>Claim your {subdomain}</Title>
@@ -294,12 +298,17 @@ const Home = ({ subdomain = config.tld }) => {
         <Banner>
           <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
             <SmallTextGrey>last purchase</SmallTextGrey>
-            <a href={`https://${parameters.lastRented}${config.tld}`} target='_blank' rel='noreferrer'><BaseText>{parameters.lastRented}{config.tld}</BaseText></a> <BaseText>({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
+            <a
+              href={`https://${parameters.lastRented}${config.tld}`} target='_blank' rel='noreferrer'
+              style={{ color: 'grey', textDecoration: 'none' }}
+            >
+              <BaseText>{parameters.lastRented}{config.tld}</BaseText>
+            </a> <BaseText>({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
           </Row>
-          <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
-            <SmallTextGrey>{humanD(Date.now() - lastRentedRecord.timeUpdated)} ago</SmallTextGrey>
-            <SmallTextGrey>by {lastRentedRecord.renter}</SmallTextGrey>
-          </Row>
+          {/* <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}> */}
+          {/*  <SmallTextGrey>{humanD(Date.now() - lastRentedRecord.timeUpdated)} ago</SmallTextGrey> */}
+          {/*  <SmallTextGrey>by {lastRentedRecord.renter}</SmallTextGrey> */}
+          {/* </Row> */}
         </Banner>}
       <FlexRow style={{ alignItems: 'baseline', marginTop: 120 }}>
         <Title style={{ margin: 0 }}>{name}</Title>
@@ -310,8 +319,24 @@ const Home = ({ subdomain = config.tld }) => {
         </a>
       </FlexRow>
       {record?.renter &&
-        <DescResponsive style={{ marginTop: 32 }}>
-          <Row>
+        <DescResponsive style={{ marginTop: 16 }}>
+          <Row style={{ justifyContent: 'space-between' }}>
+
+            {record.prev &&
+              <a href={`https://${record.prev}${config.tld}`} target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
+                <FlexRow style={{ gap: 16 }}>
+                  <SmallTextGrey>{'<'} prev</SmallTextGrey><SmallTextGrey>{record.prev}{config.tld}</SmallTextGrey>
+                </FlexRow>
+              </a>}
+
+            {record.next &&
+              <a href={`https://${record.next}${config.tld}`} target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
+                <FlexRow style={{ gap: 16 }}>
+                  <SmallTextGrey>{record.next}{config.tld}</SmallTextGrey> <SmallTextGrey> next {'>'}</SmallTextGrey>
+                </FlexRow>
+              </a>}
+          </Row>
+          <Row style={{ marginTop: 16 }}>
             <Label>owned by</Label><BaseText style={{ wordBreak: 'break-word' }}>{record.renter}</BaseText>
           </Row>
           <Row>

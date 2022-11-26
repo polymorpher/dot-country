@@ -92,7 +92,9 @@ const apis = ({ web3, address }) => {
           formatted: web3.utils.fromWei(lastPrice)
         },
         timeUpdated: new BN(timeUpdated).toNumber() * 1000,
-        url
+        url,
+        prev,
+        next
       }
     }
   }
