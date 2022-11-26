@@ -16,6 +16,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
     D1DC creates ERC721 tokens for each domain registration.
  */
 contract D1DC is ERC721, Pausable, Ownable {
+    bool public initialized;
     uint256 public baseRentalPrice;
     uint32 public rentalPeriod;
     uint32 public priceMultiplier;
@@ -58,11 +59,11 @@ contract D1DC is ERC721, Pausable, Ownable {
         revenueAccount = _revenueAccount;
     }
 
-    function numRecords() public returns (uint256){
+    function numRecords() public view returns (uint256){
         return keys.length;
     }
 
-    function getRecords(uint256 start, uint256 end) public view returns (bytes32[] memory){
+    function getRecordKeys(uint256 start, uint256 end) public view returns (bytes32[] memory){
         require(end > start, "D1DC: end must be greater than start");
         bytes32[] memory slice = new bytes32[](end - start);
         for (uint256 i = start; i < end; i++) {
@@ -95,6 +96,26 @@ contract D1DC is ERC721, Pausable, Ownable {
 
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    function initialize(string[] calldata _names, NameRecord[] calldata _records) external onlyOwner {
+        require(!initialized, "D1DC: already initialized");
+        require(_names.length == _records.length, "D1DC: unequal length");
+        for (uint256 i = 0; i < _records.length; i++) {
+            bytes32 key = keccak256(bytes(_names[i]));
+            nameRecords[key] = _records[i];
+            keys.push(key);
+            if (i >= 1 && bytes(nameRecords[key].prev).length == 0) {
+                nameRecords[key].prev = _names[i - 1];
+            }
+            if (i < _records.length - 1 && bytes(nameRecords[key].next).length == 0) {
+                nameRecords[key].next = _names[i + 1];
+            }
+        }
+    }
+
+    function finishInitialization() external onlyOwner {
+        initialized = true;
     }
 
     // User functions
