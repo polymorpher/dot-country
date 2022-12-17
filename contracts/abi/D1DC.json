@@ -1,5 +1,5 @@
 [
-  "constructor(string,string,uint256,uint32,uint32,address)",
+  "constructor(string,string,uint256,uint32,uint32,address,address)",
   "event Approval(address indexed,address indexed,uint256 indexed)",
   "event ApprovalForAll(address indexed,address indexed,bool)",
   "event NameRented(string indexed,address indexed,uint256,string)",
@@ -30,6 +30,7 @@
   "function pause()",
   "function paused() view returns (bool)",
   "function priceMultiplier() view returns (uint32)",
+  "function registrarController() view returns (address)",
   "function renounceOwnership()",
   "function rent(string,string) payable",
   "function rentalPeriod() view returns (uint32)",
@@ -39,6 +40,7 @@
   "function setApprovalForAll(address,bool)",
   "function setBaseRentalPrice(uint256)",
   "function setPriceMultiplier(uint32)",
+  "function setRegistrarController(address)",
   "function setRentalPeriod(uint32)",
   "function setRevenueAccount(address)",
   "function supportsInterface(bytes4) view returns (bool)",

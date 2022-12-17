@@ -16,10 +16,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const rentalPeriod = config.rentalPeriod * 3600 * 24
   const priceMultiplier = config.priceMultiplier
   const revenueAccount = config.revenueAccount
+  const registrarController = config.registrarController
 
   const D1DC = await deploy('D1DC', {
     from: deployer,
-    args: [name, symbol, baseRentalPrice, rentalPeriod, priceMultiplier, revenueAccount],
+    args: [name, symbol, baseRentalPrice, rentalPeriod, priceMultiplier, revenueAccount, registrarController],
     log: true,
     autoMine: true // speed up deployment on local network (ganache, hardhat), no effect on live networks
   })
