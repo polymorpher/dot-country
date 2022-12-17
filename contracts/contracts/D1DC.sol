@@ -20,6 +20,18 @@ import {IETHRegistrarController, IPriceOracle} from "@ensdomains/ens-contracts/c
     D1DC creates ERC721 tokens for each domain registration.
  */
 contract D1DC is ERC721, Pausable, Ownable {
+    // address constant dummyName =
+    //     parseAddr("0x0000000000000000000000000000000000000000"); //name
+    // address constant dummyOwner = "0x0000000000000000000000000000000000000000"; //owner
+    // uint256 constant duration = 365 days; //duration
+    // bytes32 constant secret = "secret"; //secret
+    // address constant resolver = "0x0000000000000000000000000000000000000000"; //resolver
+    // bytes constant data =
+    //     "0x0000000000000000000000000000000000000000000000000000000000000000"; //data
+    // bool constant reverseRecord = false; //reverseRecord
+    // uint32 constant fuses = 0; //fuse
+    // uint64 constant wrapperExpiry = (2**64) - 1; //wrapperExpiry
+
     bool public initialized;
     uint256 public baseRentalPrice;
     uint32 public rentalPeriod;
@@ -164,11 +176,18 @@ contract D1DC is ERC721, Pausable, Ownable {
                 : nameRecord.lastPrice * priceMultiplier;
     }
 
-    function rent(string calldata name, string calldata url)
-        public
-        payable
-        whenNotPaused
-    {
+    function rent(
+        string calldata name,
+        string calldata url,
+        address owner,
+        uint256 duration,
+        bytes32 secret,
+        address resolver,
+        bytes[] calldata data,
+        bool reverseRecord,
+        uint32 fuses,
+        uint64 wrapperExpiry
+    ) public payable whenNotPaused {
         require(bytes(name).length <= 128, "D1DC: name too long");
         require(bytes(url).length <= 1024, "D1DC: url too long");
         uint256 tokenId = uint256(keccak256(bytes(name)));
@@ -201,18 +220,42 @@ contract D1DC is ERC721, Pausable, Ownable {
             (bool success, ) = msg.sender.call{value: excess}("");
             require(success, "cannot refund excess");
         }
-        // IETHRegistrarController().register(
-        //     name,
-        //     owner,
-        //     duration,
-        //     secret,
-        //     resolver,
-        //     data,
-        //     reverseRecord,
-        //     fuses,
-        //     wrapperExpiry
-        // );
+        _register(
+            name, //name
+            msg.sender, //owner
+            duration, //duration
+            secret, //secret
+            resolver, //resolver
+            data, //data
+            reverseRecord, //reverseRecord
+            fuses, //fuse
+            wrapperExpiry //wrapperExpiry
+        );
         emit NameRented(name, msg.sender, price, url);
+    }
+
+    function _register(
+        string calldata name,
+        address owner,
+        uint256 duration,
+        bytes32 secret,
+        address resolver,
+        bytes[] calldata data,
+        bool reverseRecord,
+        uint32 fuses,
+        uint64 wrapperExpiry
+    ) internal whenNotPaused {
+        IETHRegistrarController(registrarController).register(
+            name,
+            owner,
+            duration,
+            secret,
+            resolver,
+            data,
+            reverseRecord,
+            fuses,
+            wrapperExpiry
+        );
     }
 
     function updateURL(string calldata name, string calldata url)
