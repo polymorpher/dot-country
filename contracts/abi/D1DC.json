@@ -12,7 +12,9 @@
   "function approve(address,uint256)",
   "function balanceOf(address) view returns (uint256)",
   "function baseRentalPrice() view returns (uint256)",
+  "function duration() view returns (uint256)",
   "function finishInitialization()",
+  "function fuses() view returns (uint32)",
   "function getApproved(uint256) view returns (address)",
   "function getPrice(bytes32) view returns (uint256)",
   "function getRecordKeys(uint256,uint256) view returns (bytes32[])",
@@ -32,9 +34,11 @@
   "function priceMultiplier() view returns (uint32)",
   "function registrarController() view returns (address)",
   "function renounceOwnership()",
-  "function rent(string,string) payable",
+  "function rent(string,address,bytes32,string,bytes[]) payable",
   "function rentalPeriod() view returns (uint32)",
+  "function resolver() view returns (address)",
   "function revenueAccount() view returns (address)",
+  "function reverseRecord() view returns (bool)",
   "function safeTransferFrom(address,address,uint256)",
   "function safeTransferFrom(address,address,uint256,bytes)",
   "function setApprovalForAll(address,bool)",
@@ -50,5 +54,6 @@
   "function transferOwnership(address)",
   "function unpause()",
   "function updateURL(string,string) payable",
-  "function withdraw()"
+  "function withdraw()",
+  "function wrapperExpiry() view returns (uint64)"
 ]

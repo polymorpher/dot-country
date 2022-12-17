@@ -20,24 +20,17 @@ import {IETHRegistrarController, IPriceOracle} from "@ensdomains/ens-contracts/c
     D1DC creates ERC721 tokens for each domain registration.
  */
 contract D1DC is ERC721, Pausable, Ownable {
-    // address constant dummyName =
-    //     parseAddr("0x0000000000000000000000000000000000000000"); //name
-    // address constant dummyOwner = "0x0000000000000000000000000000000000000000"; //owner
-    // uint256 constant duration = 365 days; //duration
-    // bytes32 constant secret = "secret"; //secret
-    // address constant resolver = "0x0000000000000000000000000000000000000000"; //resolver
-    // bytes constant data =
-    //     "0x0000000000000000000000000000000000000000000000000000000000000000"; //data
-    // bool constant reverseRecord = false; //reverseRecord
-    // uint32 constant fuses = 0; //fuse
-    // uint64 constant wrapperExpiry = (2**64) - 1; //wrapperExpiry
-
     bool public initialized;
     uint256 public baseRentalPrice;
     uint32 public rentalPeriod;
     uint32 public priceMultiplier;
     address public revenueAccount;
     address public registrarController;
+    uint256 public duration = 365 days; //duration
+    address public resolver = 0xCaA29B65446aBF1A513A178402A0408eB3AEee75; //resolver
+    bool public reverseRecord = true; //reverseRecord
+    uint32 public fuses = 0; //fuse
+    uint64 public wrapperExpiry = (2**64) - 1; //wrapperExpiry
 
     struct NameRecord {
         address renter;
@@ -178,15 +171,10 @@ contract D1DC is ERC721, Pausable, Ownable {
 
     function rent(
         string calldata name,
-        string calldata url,
         address owner,
-        uint256 duration,
         bytes32 secret,
-        address resolver,
-        bytes[] calldata data,
-        bool reverseRecord,
-        uint32 fuses,
-        uint64 wrapperExpiry
+        string calldata url,
+        bytes[] calldata data
     ) public payable whenNotPaused {
         require(bytes(name).length <= 128, "D1DC: name too long");
         require(bytes(url).length <= 1024, "D1DC: url too long");
@@ -220,30 +208,15 @@ contract D1DC is ERC721, Pausable, Ownable {
             (bool success, ) = msg.sender.call{value: excess}("");
             require(success, "cannot refund excess");
         }
-        _register(
-            name, //name
-            msg.sender, //owner
-            duration, //duration
-            secret, //secret
-            resolver, //resolver
-            data, //data
-            reverseRecord, //reverseRecord
-            fuses, //fuse
-            wrapperExpiry //wrapperExpiry
-        );
+        _register(name, owner, secret, data);
         emit NameRented(name, msg.sender, price, url);
     }
 
     function _register(
         string calldata name,
         address owner,
-        uint256 duration,
         bytes32 secret,
-        address resolver,
-        bytes[] calldata data,
-        bool reverseRecord,
-        uint32 fuses,
-        uint64 wrapperExpiry
+        bytes[] calldata data
     ) internal whenNotPaused {
         IETHRegistrarController(registrarController).register(
             name,
