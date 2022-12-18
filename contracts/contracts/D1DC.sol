@@ -28,10 +28,10 @@ contract D1DC is ERC721, Pausable, Ownable {
     address public registrarController;
     uint256 public duration = 365 days; //duration
     address public resolver = 0xCaA29B65446aBF1A513A178402A0408eB3AEee75; //resolver
+    bytes[] dataAddressEncoding;
     bool public reverseRecord = true; //reverseRecord
     uint32 public fuses = 0; //fuse
     uint64 public wrapperExpiry = (2**64) - 1; //wrapperExpiry
-
     struct NameRecord {
         address renter;
         uint32 timeUpdated;
@@ -71,13 +71,29 @@ contract D1DC is ERC721, Pausable, Ownable {
         uint32 _rentalPeriod,
         uint32 _priceMultiplier,
         address _revenueAccount,
-        address _registrarController
-    ) ERC721(_name, _symbol) {
-        baseRentalPrice = _baseRentalPrice;
-        rentalPeriod = _rentalPeriod;
-        priceMultiplier = _priceMultiplier;
-        revenueAccount = _revenueAccount;
-        registrarController = _registrarController;
+        address _registrarController,
+        uint256 _duration,
+        address _resolver,
+        bool _reverseRecord,
+        uint32 _fuses
+    )
+        // uint64 _wrapperExpiry
+        // bytes[] memory _dataAddressEncoding,
+        ERC721(_name, _symbol)
+    {
+        {
+            baseRentalPrice = _baseRentalPrice;
+            rentalPeriod = _rentalPeriod;
+            priceMultiplier = _priceMultiplier;
+            revenueAccount = _revenueAccount;
+            registrarController = _registrarController;
+            duration = _duration;
+            resolver = _resolver;
+            reverseRecord = _reverseRecord;
+            fuses = _fuses;
+        }
+        // dataAddressEncoding = _dataAddressEncoding;
+        // wrapperExpiry = _wrapperExpiry;
     }
 
     function numRecords() public view returns (uint256) {
@@ -120,6 +136,29 @@ contract D1DC is ERC721, Pausable, Ownable {
         onlyOwner
     {
         registrarController = _registrarController;
+    }
+
+    function setResolver(address _resolver) public onlyOwner {
+        resolver = _resolver;
+    }
+
+    // function setDataAddressEncoding(bytes[] calldata _dataAddressEncoding)
+    //     public
+    //     onlyOwner
+    // {
+    //     dataAddressEncoding = _dataAddressEncoding;
+    // }
+
+    function setReverseRecord(bool _reverseRecord) public onlyOwner {
+        reverseRecord = _reverseRecord;
+    }
+
+    function setFuses(uint32 _fuses) public onlyOwner {
+        fuses = _fuses;
+    }
+
+    function setWrapperExpiry(uint64 _wrapperExpiry) public onlyOwner {
+        wrapperExpiry = _wrapperExpiry;
     }
 
     function pause() external onlyOwner {
