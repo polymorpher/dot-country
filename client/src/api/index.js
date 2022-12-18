@@ -164,15 +164,11 @@ const apis = ({ web3, address }) => {
         next
       }
     },
-    checkAvailable: async ({name}) =>{
+    checkAvailable: async ({ name }) => {
       const c = new Contract(IBaseRegistrar, config.registrar)
       const h = web3.utils.keccak256(name).slice(2)
-      const isAvailable = await c.methods.available(new BN(h,'hex').toString()).call()
+      const isAvailable = await c.methods.available(new BN(h, 'hex').toString()).call()
       return isAvailable
-    }
-
-    claimDomain: async ({ name, txHash }) => {
-
     }
   }
 }
