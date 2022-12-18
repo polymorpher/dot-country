@@ -9,7 +9,7 @@ import { TwitterTweetEmbed } from 'react-twitter-embed'
 import styled from 'styled-components'
 import humanizeDuration from 'humanize-duration'
 import { toast } from 'react-toastify'
-import apis from './api'
+import apis, { relayApi } from './api'
 import BN from 'bn.js'
 
 const humanD = humanizeDuration.humanizer({ round: true, largest: 1 })
@@ -105,14 +105,20 @@ const Home = ({ subdomain = config.tld }) => {
   const [address, setAddress] = useState('')
   const [client, setClient] = useState(apis({}))
   const [record, setRecord] = useState(null)
+  // weakly random string
+  const [secret] = useState(Math.random().toString(26).slice(2))
   const [lastRentedRecord, setLastRentedRecord] = useState(null)
   const [price, setPrice] = useState(null)
-  const [parameters, setParameters] = useState({ rentalPeriod: 0, priceMultiplier: 0 })
+  const [parameters, setParameters] = useState({ rentalPeriod: 0, priceMultiplier: 0, registrarController: '' })
   const [tweetId, setTweetId] = useState('')
   const [pending, setPending] = useState(false)
+  // TODO: add retry functionality
+  const [regTxHash, setRegTxHash] = useState(false)
+  const [isDomainAvailable, setIsDomainAvailable] = useState(false)
 
   // for updating stuff
   const [url, setUrl] = useState('')
+  const [sld, setSld] = useState('')
 
   const name = getSubdomain()
 
@@ -221,20 +227,91 @@ const Home = ({ subdomain = config.tld }) => {
     }
     setTweetId(id.toString())
   }, [record?.url])
-  const onAction = async ({ isRenewal }) => {
-    if (!url && !isRenewal) {
+
+  const showSuccess = (tx) => {
+    console.log(tx)
+    const { transactionHash } = tx
+    toast.success(
+      <FlexRow>
+        <BaseText style={{ marginRight: 8 }}>Done!</BaseText>
+        <LinkWrarpper target='_blank' href={client.getExplorerUri(transactionHash)}>
+          <BaseText>View transaction</BaseText>
+        </LinkWrarpper>
+      </FlexRow>)
+    setTimeout(() => location.reload(), 1500)
+  }
+
+  const onUpdateUrl = async () => {
+    if (!url) {
       return toast.error('Invalid URL to embed')
     }
     setPending(true)
     try {
-      const tweetId = isRenewal ? {} : parseTweetId(url)
+      const tweetId = parseTweetId(url)
       if (tweetId.error) {
         return toast.error(tweetId.error)
       }
-      const f = isOwner && !isRenewal ? client.updateURL : client.rent
-      await f({
+      await client.updateURL({
         name,
-        url: isRenewal ? '' : tweetId.tweetId.toString(),
+        url: tweetId.tweetId.toString(),
+        amount: new BN(price.amount).toString(),
+        onFailed: () => toast.error('Failed to set URL'),
+        onSuccess: showSuccess,
+      })
+    } catch (ex) {
+      console.error(ex)
+      toast.error(`Unexpected error: ${ex.toString()}`)
+    } finally {
+      setPending(false)
+    }
+  }
+
+  const claimWeb2Domain = async (txHash) => {
+    const { success, domainExpiryDate, responseText } = await relayApi().purchaseDomain({
+      domain: `${sld}${config.tld}`, txHash, address
+    })
+    if (success) {
+      toast.success(`Web2 domain acquired. Expiration: ${domainExpiryDate}`)
+    } else {
+      console.log(`failure reason: ${responseText}`)
+      toast.error(`Unable to purchase web2 domain. Reason: ${responseText}`)
+    }
+  }
+
+  const onRent = async () => {
+    if (!url) {
+      return toast.error('Invalid URL to embed')
+    }
+    if (!sld) {
+      return toast.error('Invalid domain')
+    }
+    setPending(true)
+    try {
+      const tweetId = parseTweetId(url)
+      if (tweetId.error) {
+        return toast.error(tweetId.error)
+      }
+      await client.commit({
+        registrarController: parameters.registrarController,
+        name: sld,
+        secret,
+        onFailed: () => toast.error('Failed to commit purchase'),
+        onSuccess: (tx) => {
+          console.log(tx)
+          const { transactionHash } = tx
+          toast.success(
+            <FlexRow>
+              <BaseText style={{ marginRight: 8 }}>Reserved domain for purchase</BaseText>
+              <LinkWrarpper target='_blank' href={client.getExplorerUri(transactionHash)}>
+                <BaseText>View transaction</BaseText>
+              </LinkWrarpper>
+            </FlexRow>)
+        }
+      })
+      const tx = await client.rent({
+        name: sld,
+        secret,
+        url: tweetId.tweetId.toString(),
         amount: new BN(price.amount).toString(),
         onFailed: () => toast.error('Failed to purchase'),
         onSuccess: (tx) => {
@@ -247,9 +324,11 @@ const Home = ({ subdomain = config.tld }) => {
                 <BaseText>View transaction</BaseText>
               </LinkWrarpper>
             </FlexRow>)
-          setTimeout(() => location.reload(), 1500)
         }
       })
+      const txHash = tx.transactionHash
+      setRegTxHash(txHash)
+      await claimWeb2Domain(txHash)
     } catch (ex) {
       console.error(ex)
       toast.error(`Unexpected error: ${ex.toString()}`)
@@ -257,6 +336,20 @@ const Home = ({ subdomain = config.tld }) => {
       setPending(false)
     }
   }
+
+  useEffect(() => {
+    if (!sld || !client) {
+      return
+    }
+    async function f () {
+      const { isAvailable } = await relayApi().checkDomain({ sld })
+      const isAvailableWeb3 = await client.checkAvailable({ name: sld })
+      console.log({ isAvailableWeb3, isAvailable })
+      setIsDomainAvailable(isAvailable && isAvailableWeb3)
+    }
+    const timer = setTimeout(f, 1000)
+    return () => { clearTimeout(timer) }
+  }, [sld, client])
 
   const expired = record?.timeUpdated + parameters?.rentalPeriod - Date.now() < 0
 
@@ -273,21 +366,41 @@ const Home = ({ subdomain = config.tld }) => {
               ><BaseText>{parameters.lastRented}{config.tld}</BaseText>
               </a> <BaseText>({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
             </Row>
-            {/* <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}> */}
-            {/*  <SmallTextGrey>{humanD(Date.now() - lastRentedRecord.timeUpdated)} ago</SmallTextGrey> */}
-            {/*  <SmallTextGrey>by {lastRentedRecord.renter}</SmallTextGrey> */}
-            {/* </Row> */}
           </Banner>}
         <FlexRow style={{ alignItems: 'baseline', marginTop: 120 }}>
-          <Title style={{ margin: 0 }}>Claim your {subdomain}</Title>
+          <Title style={{ margin: 0 }}>Get your web3+2 {subdomain} domain</Title>
         </FlexRow>
         <DescLeft>
           <BaseText>How it works:</BaseText>
-          <BaseText>- go to any *.1.country website (e.g. <a href='https://all.1.country' target='_blank' rel='noreferrer'>all.1.country</a>) </BaseText>
-          <BaseText>- if you are the first, pay {parameters?.baseRentalPrice?.formatted || '100'} ONE to claim the page for {humanD(parameters?.rentalPeriod) || '3 months'}</BaseText>
-          <BaseText>- otherwise, pay double the last person paid to claim the page</BaseText>
-          <BaseText>- once claimed, you can embed any tweet on your page!</BaseText>
+          <BaseText>- Here (<a href={`https://${config.tldHub}`}>{config.tldHub}</a>), you can rent a {config.tld} domain </BaseText>
+          <BaseText>- It will be web3 compatible (tradable as NFT, displayable on ENS, wallets, and other services in the near future)</BaseText>
+          <BaseText>- It also works in web2! You can visit the domain in your browser </BaseText>
+          <BaseText>- You can configure the domain in many ways: Embed a tweet, setup a simple website (coming soon), configure DNS (coming soon), and many more </BaseText>
+          <BaseText>- example: <a href={`https://${config.tldExample}`} target='_blank' rel='noreferrer'>{config.tldExample}</a></BaseText>
         </DescLeft>
+        {!address && <Button onClick={connect} style={{ width: 'auto' }}>CONNECT METAMASK</Button>}
+        {address &&
+          <Col>
+            <Title>Rent a domain now</Title>
+            <Row style={{ width: '80%', gap: 0 }}>
+              <Input $width='50%' $margin='8px' value={sld} onChange={({ target: { value } }) => setSld(value)} />
+              <SmallTextGrey>.country</SmallTextGrey>
+            </Row>
+            <SmallTextGrey style={{ marginTop: 32 }}>Which tweet do you showcase in your domain?</SmallTextGrey>
+            <Row style={{ width: '80%', gap: 0, position: 'relative' }}>
+              <Input $width='100%' $margin='8px' value={url} onChange={({ target: { value } }) => setUrl(value)} />
+              <FloatingText>copy the tweet's URL</FloatingText>
+            </Row>
+            <Button onClick={onRent} disabled={pending || !isDomainAvailable}>RENT</Button>
+            <Col>
+              <Row style={{ marginTop: 32, justifyContent: 'center' }}>
+                <Label>price</Label><BaseText>{price?.formatted} ONE</BaseText>
+              </Row>
+              <Row style={{ justifyContent: 'center' }}>
+                <SmallTextGrey>for {humanD(parameters.rentalPeriod)} </SmallTextGrey>
+              </Row>
+            </Col>
+          </Col>}
       </Container>
     )
   }
@@ -305,14 +418,10 @@ const Home = ({ subdomain = config.tld }) => {
               <BaseText>{parameters.lastRented}{config.tld}</BaseText>
             </a> <BaseText>({lastRentedRecord.lastPrice.formatted} ONE)</BaseText>
           </Row>
-          {/* <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }}> */}
-          {/*  <SmallTextGrey>{humanD(Date.now() - lastRentedRecord.timeUpdated)} ago</SmallTextGrey> */}
-          {/*  <SmallTextGrey>by {lastRentedRecord.renter}</SmallTextGrey> */}
-          {/* </Row> */}
         </Banner>}
       <FlexRow style={{ alignItems: 'baseline', marginTop: 120 }}>
         <Title style={{ margin: 0 }}>{name}</Title>
-        <a href={`https://${config.tldLink}`} target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
+        <a href={`https://${config.tldHub}`} target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
           <BaseText style={{ fontSize: 12, color: 'grey', marginLeft: '16px', textDecoration: 'none' }}>
             {subdomain}
           </BaseText>
@@ -366,7 +475,8 @@ const Home = ({ subdomain = config.tld }) => {
             ? (
               <>
                 <Title style={{ marginTop: 32, textAlign: 'center' }}>
-                  Take over this page, embed a tweet you choose
+                  This domain is already taken. Get your own at
+                  <a href={`https://${config.tldHub}`} target='_blank' rel='noreferrer'>{config.tldHub}</a>
                 </Title>
                 <Row style={{ marginTop: 16, justifyContent: 'center' }}>
                   <Label>Price</Label><BaseText>{price?.formatted} ONE</BaseText>
@@ -381,41 +491,24 @@ const Home = ({ subdomain = config.tld }) => {
               </Title>)}
 
         </DescResponsive>}
-      {!record?.renter &&
-        <Col>
-          <Title>Page Not Yet Claimed</Title>
-          <SmallTextGrey style={{ marginTop: 32, textAlign: 'center' }}>
-            Claim now and embed a tweet you choose
-          </SmallTextGrey>
-          <Col>
-            <Row style={{ marginTop: 32, justifyContent: 'center' }}>
-              <Label>price</Label><BaseText>{price?.formatted} ONE</BaseText>
-            </Row>
-            <Row style={{ justifyContent: 'center' }}>
-              <SmallTextGrey>for {humanD(parameters.rentalPeriod)} </SmallTextGrey>
-            </Row>
-          </Col>
-        </Col>}
 
-      {!address && <Button onClick={connect} style={{ width: 'auto' }}>CONNECT METAMASK</Button>}
+      {!address && isOwner && <Button onClick={connect} style={{ width: 'auto' }}>CONNECT METAMASK</Button>}
 
-      {address && (
+      {address && isOwner && (
         <>
           <SmallTextGrey style={{ marginTop: 32 }}>Which tweet do you want this page to embed?</SmallTextGrey>
           <Row style={{ width: '80%', gap: 0, position: 'relative' }}>
             <Input $width='100%' $margin='8px' value={url} onChange={({ target: { value } }) => setUrl(value)} />
             <FloatingText>copy the tweet's URL</FloatingText>
           </Row>
-          <Button onClick={onAction} disabled={pending}>{isOwner ? 'UPDATE URL' : 'BUY'}</Button>
-          {isOwner &&
-            <>
-              <Title style={{ marginTop: 64 }}>Renew ownership</Title>
-              <Row style={{ justifyContent: 'center' }}>
-                <Label>renewal price</Label><BaseText>{price?.formatted} ONE</BaseText>
-              </Row>
-              <SmallTextGrey>for {humanD(parameters.rentalPeriod)} </SmallTextGrey>
-              <Button onClick={() => onAction({ isRenewal: true })} disabled={pending}>RENEW</Button>
-            </>}
+          <Button onClick={onUpdateUrl} disabled={pending}>UPDATE URL</Button>
+          <Title style={{ marginTop: 64 }}>Renew ownership</Title>
+          <Row style={{ justifyContent: 'center' }}>
+            <Label>renewal price</Label><BaseText>{price?.formatted} ONE</BaseText>
+          </Row>
+          <SmallTextGrey>for {humanD(parameters.rentalPeriod)} </SmallTextGrey>
+          <Button onClick={() => ({})} disabled>RENEW</Button>
+          <SmallTextGrey>*Renewal is disabled at this time. It will be re-enabled in the coming months.</SmallTextGrey>
           <SmallTextGrey>Your address: {address}</SmallTextGrey>
         </>
       )}
