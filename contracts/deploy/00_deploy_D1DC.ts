@@ -2,7 +2,8 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { DeployFunction } from 'hardhat-deploy/types'
 import config from '../config'
 import fs from 'fs/promises'
-import { chunk } from 'lodash'
+import { chunk, max } from 'lodash'
+import { deflateSync } from 'zlib'
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
@@ -12,15 +13,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const name = '.1.country'
   const symbol = 'D1DC'
-  const baseRentalPrice = ethers.utils.parseEther(config.baseRentalPrice)
-  const rentalPeriod = config.rentalPeriod * 3600 * 24
-  const priceMultiplier = config.priceMultiplier
-  const revenueAccount = config.revenueAccount
-  const registrarController = config.registrarController
+  //   const maxWrapperExpiry = 2 ** 64 - 1
+  //   const maxWrapperExpiry = 2n ** 64n - 1n
+  //   const maxWrapperExpiry = 18446744073709551615
+  const initConfiguration = {
+    baseRentalPrice: ethers.utils.parseEther(config.baseRentalPrice),
+    rentalPeriod: config.rentalPeriod * 3600 * 24,
+    priceMultiplier: config.priceMultiplier,
+    revenueAccount: config.revenueAccount,
+    registrarController: config.registrarController,
+    duration: config.duration * 3600 * 24,
+    resolver: config.resolver,
+    reverseRecord: config.reverseRecord,
+    fuses: config.fuses
+    // wrapperExpiry: maxWrapperExpiry
+  }
+  console.log(`D1DC initial Configuration: ${JSON.stringify(initConfiguration, null, 2)}`)
 
   const D1DC = await deploy('D1DC', {
     from: deployer,
-    args: [name, symbol, baseRentalPrice, rentalPeriod, priceMultiplier, revenueAccount, registrarController],
+    args: [name, symbol, initConfiguration],
+    // args: [name, symbol, baseRentalPrice, rentalPeriod, priceMultiplier, revenueAccount, registrarController],
     log: true,
     autoMine: true // speed up deployment on local network (ganache, hardhat), no effect on live networks
   })
@@ -31,6 +44,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log('D1DC finished initialization')
     return
   }
+  console.log('HERE 1')
   const records:{name:string, key: string, record: any[]}[] = JSON.parse(await fs.readFile(config.initialRecordFile, { encoding: 'utf-8' }))
   const chunks = chunk(records, 50)
   await d1dc.initialize([ethers.utils.id('')], [[ethers.constants.AddressZero, 0, 0, '', '', chunks[0][0].name]])

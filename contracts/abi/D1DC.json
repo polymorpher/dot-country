@@ -1,5 +1,5 @@
 [
-  "constructor(string,string,uint256,uint32,uint32,address,address,uint256,address,bool,uint32)",
+  "constructor(string,string,tuple(uint256,uint32,uint32,address,address,uint256,address,bool,uint32))",
   "event Approval(address indexed,address indexed,uint256 indexed)",
   "event ApprovalForAll(address indexed,address indexed,bool)",
   "event NameRented(string indexed,address indexed,uint256,string)",

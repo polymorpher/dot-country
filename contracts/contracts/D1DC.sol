@@ -20,18 +20,35 @@ import {IETHRegistrarController, IPriceOracle} from "@ensdomains/ens-contracts/c
     D1DC creates ERC721 tokens for each domain registration.
  */
 contract D1DC is ERC721, Pausable, Ownable {
+    uint64 MAX_INT_64 = 2**64 - 1;
+
     bool public initialized;
     uint256 public baseRentalPrice;
     uint32 public rentalPeriod;
     uint32 public priceMultiplier;
     address public revenueAccount;
     address public registrarController;
-    uint256 public duration = 365 days; //duration
-    address public resolver = 0xCaA29B65446aBF1A513A178402A0408eB3AEee75; //resolver
-    bytes[] dataAddressEncoding;
-    bool public reverseRecord = true; //reverseRecord
-    uint32 public fuses = 0; //fuse
-    uint64 public wrapperExpiry = (2**64) - 1; //wrapperExpiry
+    uint256 public duration;
+    address public resolver;
+    // bytes[] dataAddressEncoding;
+    bool public reverseRecord;
+    uint32 public fuses;
+    uint64 public wrapperExpiry;
+
+    // Use a structure for Initial Configuration to fix stack too deep error
+    struct InitConfiguration {
+        uint256 baseRentalPrice;
+        uint32 rentalPeriod;
+        uint32 priceMultiplier;
+        address revenueAccount;
+        address registrarController;
+        uint256 duration;
+        address resolver;
+        // // bytes[] dataAddressEncoding;
+        bool reverseRecord;
+        uint32 fuses;
+        // uint64 wrapperExpiry;
+    }
     struct NameRecord {
         address renter;
         uint32 timeUpdated;
@@ -67,33 +84,20 @@ contract D1DC is ERC721, Pausable, Ownable {
     constructor(
         string memory _name,
         string memory _symbol,
-        uint256 _baseRentalPrice,
-        uint32 _rentalPeriod,
-        uint32 _priceMultiplier,
-        address _revenueAccount,
-        address _registrarController,
-        uint256 _duration,
-        address _resolver,
-        bool _reverseRecord,
-        uint32 _fuses
-    )
-        // uint64 _wrapperExpiry
-        // bytes[] memory _dataAddressEncoding,
-        ERC721(_name, _symbol)
-    {
-        {
-            baseRentalPrice = _baseRentalPrice;
-            rentalPeriod = _rentalPeriod;
-            priceMultiplier = _priceMultiplier;
-            revenueAccount = _revenueAccount;
-            registrarController = _registrarController;
-            duration = _duration;
-            resolver = _resolver;
-            reverseRecord = _reverseRecord;
-            fuses = _fuses;
-        }
-        // dataAddressEncoding = _dataAddressEncoding;
-        // wrapperExpiry = _wrapperExpiry;
+        InitConfiguration memory _initConfig
+    ) ERC721(_name, _symbol) {
+        baseRentalPrice = _initConfig.baseRentalPrice;
+        rentalPeriod = _initConfig.rentalPeriod;
+        priceMultiplier = _initConfig.priceMultiplier;
+        revenueAccount = _initConfig.revenueAccount;
+        registrarController = _initConfig.registrarController;
+        duration = _initConfig.duration;
+        resolver = _initConfig.resolver;
+        // // dataAddressEncoding = _initConfig.dataAddressEncoding;
+        reverseRecord = _initConfig.reverseRecord;
+        fuses = _initConfig.fuses;
+        wrapperExpiry = MAX_INT_64;
+        // wrapperExpiry = _initConfig.wrapperExpiry;
     }
 
     function numRecords() public view returns (uint256) {
@@ -142,7 +146,7 @@ contract D1DC is ERC721, Pausable, Ownable {
         resolver = _resolver;
     }
 
-    // function setDataAddressEncoding(bytes[] calldata _dataAddressEncoding)
+    // function setDataAddressEncoding(bytes[] memory _dataAddressEncoding)
     //     public
     //     onlyOwner
     // {
