@@ -1,4 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
+import { ethers } from 'hardhat'
 import { DeployFunction } from 'hardhat-deploy/types'
 import config from '../config'
 import fs from 'fs/promises'
@@ -13,9 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const name = '.1.country'
   const symbol = 'D1DC'
-  //   const maxWrapperExpiry = 2 ** 64 - 1
-  //   const maxWrapperExpiry = 2n ** 64n - 1n
-  //   const maxWrapperExpiry = 18446744073709551615
+  const maxWrapperExpiry = ethers.BigNumber.from(new Uint8Array(8).fill(255)).toString()
   const initConfiguration = {
     baseRentalPrice: ethers.utils.parseEther(config.baseRentalPrice),
     rentalPeriod: config.rentalPeriod * 3600 * 24,
@@ -25,15 +24,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     duration: config.duration * 3600 * 24,
     resolver: config.resolver,
     reverseRecord: config.reverseRecord,
-    fuses: config.fuses
-    // wrapperExpiry: maxWrapperExpiry
+    fuses: config.fuses,
+    wrapperExpiry: maxWrapperExpiry
   }
   console.log(`D1DC initial Configuration: ${JSON.stringify(initConfiguration, null, 2)}`)
 
   const D1DC = await deploy('D1DC', {
     from: deployer,
     args: [name, symbol, initConfiguration],
-    // args: [name, symbol, baseRentalPrice, rentalPeriod, priceMultiplier, revenueAccount, registrarController],
     log: true,
     autoMine: true // speed up deployment on local network (ganache, hardhat), no effect on live networks
   })

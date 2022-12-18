@@ -20,8 +20,6 @@ import {IETHRegistrarController, IPriceOracle} from "@ensdomains/ens-contracts/c
     D1DC creates ERC721 tokens for each domain registration.
  */
 contract D1DC is ERC721, Pausable, Ownable {
-    uint64 MAX_INT_64 = 2**64 - 1;
-
     bool public initialized;
     uint256 public baseRentalPrice;
     uint32 public rentalPeriod;
@@ -30,7 +28,6 @@ contract D1DC is ERC721, Pausable, Ownable {
     address public registrarController;
     uint256 public duration;
     address public resolver;
-    // bytes[] dataAddressEncoding;
     bool public reverseRecord;
     uint32 public fuses;
     uint64 public wrapperExpiry;
@@ -44,10 +41,9 @@ contract D1DC is ERC721, Pausable, Ownable {
         address registrarController;
         uint256 duration;
         address resolver;
-        // // bytes[] dataAddressEncoding;
         bool reverseRecord;
         uint32 fuses;
-        // uint64 wrapperExpiry;
+        uint64 wrapperExpiry;
     }
     struct NameRecord {
         address renter;
@@ -93,11 +89,9 @@ contract D1DC is ERC721, Pausable, Ownable {
         registrarController = _initConfig.registrarController;
         duration = _initConfig.duration;
         resolver = _initConfig.resolver;
-        // // dataAddressEncoding = _initConfig.dataAddressEncoding;
         reverseRecord = _initConfig.reverseRecord;
         fuses = _initConfig.fuses;
-        wrapperExpiry = MAX_INT_64;
-        // wrapperExpiry = _initConfig.wrapperExpiry;
+        wrapperExpiry = _initConfig.wrapperExpiry;
     }
 
     function numRecords() public view returns (uint256) {
@@ -145,13 +139,6 @@ contract D1DC is ERC721, Pausable, Ownable {
     function setResolver(address _resolver) public onlyOwner {
         resolver = _resolver;
     }
-
-    // function setDataAddressEncoding(bytes[] memory _dataAddressEncoding)
-    //     public
-    //     onlyOwner
-    // {
-    //     dataAddressEncoding = _dataAddressEncoding;
-    // }
 
     function setReverseRecord(bool _reverseRecord) public onlyOwner {
         reverseRecord = _reverseRecord;

@@ -14,6 +14,5 @@ export default {
   resolver: process.env.RESOLVER || '0xCaA29B65446aBF1A513A178402A0408eB3AEee75',
   reverseRecord: process.env.REVERSE_RECORD || true,
   fuses: parseInt(process.env.FUSES || '0'),
-  //   wrapperExpiry: process.env.WRAPPER_EXPIRY || 2n ** 64n - 1n,
   initialRecordFile: process.env.INITIAL_RECORD_FILE
 }
