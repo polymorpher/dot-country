@@ -179,7 +179,7 @@ contract DC is Pausable, Ownable {
         string calldata url,
         bytes[] calldata data
     ) public payable whenNotPaused {
-        require(bytes(name).length <= 128, "D1DC: name too long");
+        require(bytes(name).length <= 128, "DC: name too long");
         uint256 ensPrice = getENSPrice(name);
         require(
             (baseRentalPrice + ensPrice) <= msg.value,

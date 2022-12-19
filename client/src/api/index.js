@@ -1,6 +1,6 @@
 import Contract from 'web3-eth-contract'
 import config from '../../config'
-import D1DC from '../../abi/D1DC.json'
+import DC from '../../abi/DC.json'
 import IBaseRegistrar from '../../abi/IBaseRegistrar.json'
 import RegistrarController from '../../abi/RegistrarController.json'
 import Constants from '../constants'
@@ -56,7 +56,7 @@ const apis = ({ web3, address }) => {
     return
   }
   Contract.setProvider(web3.currentProvider)
-  const contract = new Contract(D1DC, config.contract)
+  const contract = new Contract(DC, config.contract)
 
   const call = async ({ amount, onFailed, onSubmitted, onSuccess, methodName, parameters, callee = contract }) => {
     console.log({ methodName, parameters, amount, address })

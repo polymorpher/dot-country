@@ -31,7 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
     autoMine: true // speed up deployment on local network (ganache, hardhat), no effect on live networks
   })
-  console.log('D1DC address:', DC.address)
+  console.log('DC address:', DC.address)
   const dc = await ethers.getContractAt('DC', DC.address)
   const readConfiguration = {
     baseRentalPrice: ethers.utils.formatUnits(await dc.baseRentalPrice()),
