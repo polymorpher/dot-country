@@ -5,7 +5,8 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
-import {IETHRegistrarController, IPriceOracle} from "@ensdomains/ens-contracts/contracts/ethregistrar/IETHRegistrarController.sol";
+// import {IETHRegistrarController, IPriceOracle} from "@ensdomains/ens-contracts/contracts/ethregistrar/IETHRegistrarController.sol";
+import {IETHRegistrarController, IPriceOracle} from "./IETHRegistrarController.sol";
 
 /**
     @title A domain manager contract for .country (DC -  Dot Country)
@@ -21,7 +22,8 @@ import {IETHRegistrarController, IPriceOracle} from "@ensdomains/ens-contracts/c
  */
 contract DC is Pausable, Ownable {
     uint256 constant MIN_DURATION = 365 days;
-    bytes constant EMPTY_DATA = new bytes(0);
+    bytes constant EMPTY_DATA = bytes("");
+
     bool public initialized;
     uint256 public baseRentalPrice;
     address public revenueAccount;
@@ -32,9 +34,9 @@ contract DC is Pausable, Ownable {
     uint32 public fuses;
     uint64 public wrapperExpiry;
 
-    IETHRegistrarController RegistrarControllerContract =
+    IETHRegistrarController registrarControllerContract =
         IETHRegistrarController(registrarController);
-    IPriceOracle PriceOracleContract = IPriceOracle(registrarController);
+    IPriceOracle priceOracleContract = IPriceOracle(registrarController);
 
     // Use a structure for Initial Configuration to fix stack too deep error
     struct InitConfiguration {
@@ -48,23 +50,18 @@ contract DC is Pausable, Ownable {
         uint64 wrapperExpiry;
     }
 
-    //TODO events
-    //TODO madeCommitment
-    //TODO committed
-    event NameRegistered(
-        string name,
-        bytes32 indexed label,
-        address indexed owner,
-        uint256 baseCost,
-        uint256 premium,
-        uint256 expires
-    );
-    event NameRenewed(
-        string name,
-        bytes32 indexed label,
-        uint256 cost,
-        uint256 expires
-    );
+    struct NameRecord {
+        address renter;
+        uint32 timeUpdated;
+        uint256 lastPrice;
+        string url;
+    }
+
+    mapping(bytes32 => NameRecord) public nameRecords;
+
+    string public lastRented;
+
+    // events
 
     event NameRented(
         string indexed name,
@@ -72,7 +69,12 @@ contract DC is Pausable, Ownable {
         uint256 price,
         string url
     );
-
+    event URLUpdated(
+        string indexed name,
+        address indexed renter,
+        string oldUrl,
+        string newUrl
+    );
     event RevenueAccountChanged(address from, address to);
 
     /**
@@ -145,22 +147,12 @@ contract DC is Pausable, Ownable {
         _unpause();
     }
 
-    //TODO Admin Functions
-    // TODO change Owner
-    // TODO add operator
-    // TODO remove operator
-
-    // TODO Operator functions
-    // TODO RegisterFree
-    // TODO RenewFree
-
-    // TODO User functions
     /**
      * @dev `available` calls RegistrarController to check if a name is available
      * @param name The name to be checked being registered
      */
     function available(string memory name) public returns (bool) {
-        return RegistrarControllerContract.available(name);
+        return registrarControllerContract.available(name);
     }
 
     /**
@@ -183,7 +175,7 @@ contract DC is Pausable, Ownable {
                     owner,
                     duration,
                     resolver,
-                    EMPTY_DATA,
+                    bytes(""),
                     secret,
                     reverseRecord,
                     fuses,
@@ -197,7 +189,7 @@ contract DC is Pausable, Ownable {
      * @param commitment The commitment calculated by makeCommitment
      */
     function commit(bytes32 commitment) public {
-        RegistrarControllerContract.commit(commitment);
+        registrarControllerContract.commit(commitment);
     }
 
     /**
@@ -205,58 +197,69 @@ contract DC is Pausable, Ownable {
      * tRegistrarController.rentPrice (price.base + price.premium)
      * @param name The name being registered
      */
-    function getENSPrice(string memory name) public returns (uint256) {
-        IPriceOracle.Price memory price = RegistrarControllerContract.rentPrice(
+    function getENSPrice(string memory name) public view returns (uint256) {
+        IPriceOracle.Price memory price = registrarControllerContract.rentPrice(
             name,
             duration
         );
         return (price.base + price.premium);
     }
 
-    // /**
-    //  * @dev `getCombinedPrice` gets the price needed to be paid which calculated as
-    //  * the baseRentalPrice + RegistrarController.rentPrice (price.base + price.premium)
-    //  * @param name The name being registered
-    //  */
-    // function getCombinedPrice(string memory name)
-    //     public
-    //     returns (uint256, uint256)
-    // {
-    //     IPriceOracle.Price memory price = RegistrarControllerContract.rentPrice(
-    //         name,
-    //         duration
-    //     );
-    //     return (baseRentalPrice, (price.base + price.premium));
-    // }
+    /**
+     * @dev `getCombinedPrice` gets the price needed to be paid which calculated as
+     * the baseRentalPrice + RegistrarController.rentPrice (price.base + price.premium)
+     * @param name The name being registered
+     */
+    function getCombinedPrice(string memory name)
+        public
+        view
+        returns (uint256, uint256)
+    {
+        IPriceOracle.Price memory price = registrarControllerContract.rentPrice(
+            name,
+            duration
+        );
+        return (baseRentalPrice, (price.base + price.premium));
+    }
 
     /**
      * @dev `register` calls RegistrarController register and is used to register a name
      * this also takes a fee for the web2 registration which is held by DC.sol a check is made to ensure the value sent is sufficient for both fees
      * @param name The name to be registered e.g. for test.country it would be test
-     * @param owner The owner address of the name to be registered
+     * @param url A URL that can be embedded in a web2 default domain page e.g. a twitter post
      * @param secret A secret passed by the client e.g. const [secret] = useState(Math.random().toString(26).slice(2))
-     * @param data TODO remove this and default to an empty array
      */
     function register(
         string calldata name,
-        address owner,
-        bytes32 secret,
-        bytes[] calldata data
+        string calldata url,
+        bytes32 secret
     ) public payable whenNotPaused {
         require(bytes(name).length <= 128, "DC: name too long");
+        require(bytes(url).length <= 1024, "DC: url too long");
         uint256 ensPrice = getENSPrice(name);
-        require(
-            (baseRentalPrice + ensPrice) <= msg.value,
-            "DC: insufficient payment"
-        );
-        _register(name, owner, secret, ensPrice, data);
+        uint256 price = baseRentalPrice + ensPrice;
+        require(price <= msg.value, "DC: insufficient payment");
+        _register(name, msg.sender, secret, ensPrice);
+        // Update Name Record and send events
+        uint256 tokenId = uint256(keccak256(bytes(name)));
+        NameRecord storage nameRecord = nameRecords[bytes32(tokenId)];
+        nameRecord.renter = msg.sender;
+        nameRecord.lastPrice = price;
+        nameRecord.timeUpdated = uint32(block.timestamp);
+        if (bytes(url).length > 0) {
+            nameRecord.url = url;
+        }
+
+        lastRented = name;
+
+        emit NameRented(name, msg.sender, price, url);
+
+        // Return any excess funds
         uint256 excess = msg.value - (baseRentalPrice + ensPrice);
         if (excess > 0) {
             (bool success, ) = msg.sender.call{value: excess}("");
             require(success, "cannot refund excess");
         }
-
-        // emit NameRegistered(name, msg.sender, price, url);
     }
 
     /**
@@ -266,22 +269,21 @@ contract DC is Pausable, Ownable {
      * @param owner The owner address of the name to be registered
      * @param secret A secret passed by the client e.g. const [secret] = useState(Math.random().toString(26).slice(2))
      * @param ensPrice the price paid to ens for the registration
-     * @param data TODO remove this and default to an empty array
      */
     function _register(
         string calldata name,
         address owner,
         bytes32 secret,
-        uint256 ensPrice,
-        bytes[] calldata data
+        uint256 ensPrice
     ) internal whenNotPaused {
-        RegistrarControllerContract.register{value: ensPrice}(
+        bytes[] memory emptyData;
+        registrarControllerContract.register{value: ensPrice}(
             name,
             owner,
             duration,
             secret,
             resolver,
-            data,
+            emptyData,
             reverseRecord,
             fuses,
             wrapperExpiry
@@ -293,22 +295,39 @@ contract DC is Pausable, Ownable {
      * this also takes a fee for the web2 renewal which is held by DC.sol a check is made to ensure the value sent is sufficient for both fees
      * duration is set at the contract level
      * @param name The name to be registered e.g. for test.country it would be test
+     * @param url A URL that can be embedded in a web2 default domain page e.g. a twitter post
      */
-    function renew(string calldata name) public payable whenNotPaused {
+    function renew(
+        string calldata name,
+        string calldata url,
+        address owner
+    ) public payable whenNotPaused {
         require(bytes(name).length <= 128, "DC: name too long");
+        require(bytes(url).length <= 1024, "DC: url too long");
         uint256 ensPrice = getENSPrice(name);
-        require(
-            (baseRentalPrice + ensPrice) <= msg.value,
-            "DC: insufficient payment"
-        );
+        uint256 price = baseRentalPrice + ensPrice;
+        require((price) <= msg.value, "DC: insufficient payment");
         _renew(name, ensPrice);
+
+        // Update Name Record and send events
+        uint256 tokenId = uint256(keccak256(bytes(name)));
+        NameRecord storage nameRecord = nameRecords[bytes32(tokenId)];
+        nameRecord.renter = owner;
+        nameRecord.lastPrice = price;
+        nameRecord.timeUpdated = uint32(block.timestamp);
+        if (bytes(url).length > 0) {
+            nameRecord.url = url;
+        }
+
+        lastRented = name;
+
+        emit NameRented(name, owner, price, url);
+
         uint256 excess = msg.value - (baseRentalPrice + ensPrice);
         if (excess > 0) {
             (bool success, ) = msg.sender.call{value: excess}("");
             require(success, "cannot refund excess");
         }
-
-        // emit NameRegistered(name, msg.sender, price, url);
     }
 
     /**
@@ -322,7 +341,26 @@ contract DC is Pausable, Ownable {
         internal
         whenNotPaused
     {
-        RegistrarControllerContract.renew{value: ensPrice}(name, duration);
+        registrarControllerContract.renew{value: ensPrice}(name, duration);
+    }
+
+    function updateURL(string calldata name, string calldata url)
+        public
+        payable
+        whenNotPaused
+    {
+        require(
+            nameRecords[keccak256(bytes(name))].renter == msg.sender,
+            "DC: not owner"
+        );
+        require(bytes(url).length <= 1024, "DC: url too long");
+        emit URLUpdated(
+            name,
+            msg.sender,
+            nameRecords[keccak256(bytes(name))].url,
+            url
+        );
+        nameRecords[keccak256(bytes(name))].url = url;
     }
 
     function withdraw() external {

@@ -42,7 +42,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     reverseRecord: await dc.reverseRecord(),
     fuses: await dc.fuses(),
     wrapperExpiry: (await dc.wrapperExpiry()).toString()
-    // getPrice: (await dc.getPrice('test'))
+    // getPrice: (await dc.getENSPrice('test'))
   }
   console.log(`DC Read Configuration: ${JSON.stringify(readConfiguration, null, 2)}`)
 }
