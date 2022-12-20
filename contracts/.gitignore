@@ -17,3 +17,5 @@ typechain-types
 
 dump.json
 .env.dump
+
+.vscode
