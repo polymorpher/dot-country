@@ -11,6 +11,7 @@ import humanizeDuration from 'humanize-duration'
 import { toast } from 'react-toastify'
 import apis, { relayApi } from './api'
 import BN from 'bn.js'
+import { TailSpin } from 'react-loading-icons'
 
 const humanD = humanizeDuration.humanizer({ round: true, largest: 1 })
 
@@ -109,12 +110,13 @@ const Home = ({ subdomain = config.tld }) => {
   const [secret] = useState(Math.random().toString(26).slice(2))
   const [lastRentedRecord, setLastRentedRecord] = useState(null)
   const [price, setPrice] = useState(null)
-  const [parameters, setParameters] = useState({ rentalPeriod: 0, priceMultiplier: 0, registrarController: '' })
+  const [parameters, setParameters] = useState({ duration: 0, lastRented: '' })
   const [tweetId, setTweetId] = useState('')
   const [pending, setPending] = useState(false)
   // TODO: add retry functionality
   const [regTxHash, setRegTxHash] = useState(false)
-  const [isDomainAvailable, setIsDomainAvailable] = useState(false)
+  const [checkingAvailability, setCheckingAvailability] = useState(false)
+  const [isDomainAvailable, setIsDomainAvailable] = useState(null)
 
   // for updating stuff
   const [url, setUrl] = useState('')
@@ -268,7 +270,10 @@ const Home = ({ subdomain = config.tld }) => {
 
   const claimWeb2Domain = async (txHash) => {
     const { success, domainExpiryDate, responseText } = await relayApi().purchaseDomain({
-      domain: `${sld}${config.tld}`, txHash, address
+      // domain: `${sld}${config.tld}`,
+      domain: `${sld}.com`,
+      txHash,
+      address
     })
     if (success) {
       toast.success(`Web2 domain acquired. Expiration: ${domainExpiryDate}`)
@@ -342,16 +347,24 @@ const Home = ({ subdomain = config.tld }) => {
       return
     }
     async function f () {
-      const { isAvailable } = await relayApi().checkDomain({ sld })
-      const isAvailableWeb3 = await client.checkAvailable({ name: sld })
-      console.log({ isAvailableWeb3, isAvailable })
-      setIsDomainAvailable(isAvailable && isAvailableWeb3)
+      try {
+        setCheckingAvailability(true)
+        const { isAvailable } = await relayApi().checkDomain({ sld })
+        const isAvailableWeb3 = await client.checkAvailable({ name: sld })
+        console.log({ isAvailableWeb3, isAvailable })
+        setIsDomainAvailable(isAvailable && isAvailableWeb3)
+      } catch (ex) {
+        console.error(ex)
+        toast.error('Cannot check domain availability')
+      } finally {
+        setCheckingAvailability(false)
+      }
     }
     const timer = setTimeout(f, 1000)
     return () => { clearTimeout(timer) }
   }, [sld, client])
 
-  const expired = record?.timeUpdated + parameters?.rentalPeriod - Date.now() < 0
+  const expired = record?.expirationTime - Date.now() < 0
 
   if (name === '') {
     return (
@@ -368,36 +381,43 @@ const Home = ({ subdomain = config.tld }) => {
             </Row>
           </Banner>}
         <FlexRow style={{ alignItems: 'baseline', marginTop: 120 }}>
-          <Title style={{ margin: 0 }}>Get your web3+2 {subdomain} domain</Title>
+          <Title style={{ margin: 0 }}>Get your web3+2 domain ({subdomain})</Title>
         </FlexRow>
         <DescLeft>
           <BaseText>How it works:</BaseText>
           <BaseText>- Here (<a href={`https://${config.tldHub}`}>{config.tldHub}</a>), you can rent a {config.tld} domain </BaseText>
-          <BaseText>- It will be web3 compatible (tradable as NFT, displayable on ENS, wallets, and other services in the near future)</BaseText>
-          <BaseText>- It also works in web2! You can visit the domain in your browser </BaseText>
-          <BaseText>- You can configure the domain in many ways: Embed a tweet, setup a simple website (coming soon), configure DNS (coming soon), and many more </BaseText>
+          <BaseText>- You can trade it as NFT, use it in ENS, wallets, and other web3 services</BaseText>
+          <BaseText>- It also works in browser! This domain is backward compatible with web2 </BaseText>
+          <BaseText>- Later, you can setup a simple website on the domain, configure DNS, and do many things no one in web3 has done before</BaseText>
           <BaseText>- example: <a href={`https://${config.tldExample}`} target='_blank' rel='noreferrer'>{config.tldExample}</a></BaseText>
         </DescLeft>
         {!address && <Button onClick={connect} style={{ width: 'auto' }}>CONNECT METAMASK</Button>}
         {address &&
-          <Col>
+          <Col style={{ alignItems: 'center' }}>
             <Title>Rent a domain now</Title>
-            <Row style={{ width: '80%', gap: 0 }}>
-              <Input $width='50%' $margin='8px' value={sld} onChange={({ target: { value } }) => setSld(value)} />
+            <Row style={{ width: '100%', gap: 0, justifyContent: 'center' }}>
+              <Input $width='128px' $margin='8px' value={sld} onChange={({ target: { value } }) => setSld(value)} />
               <SmallTextGrey>.country</SmallTextGrey>
             </Row>
-            <SmallTextGrey style={{ marginTop: 32 }}>Which tweet do you showcase in your domain?</SmallTextGrey>
-            <Row style={{ width: '80%', gap: 0, position: 'relative' }}>
+            <SmallTextGrey style={{ marginTop: 32, textAlign: 'center' }}>Which tweet do you showcase in your domain?</SmallTextGrey>
+            <Row style={{ width: '100%', gap: 0, position: 'relative' }}>
               <Input $width='100%' $margin='8px' value={url} onChange={({ target: { value } }) => setUrl(value)} />
               <FloatingText>copy the tweet's URL</FloatingText>
             </Row>
-            <Button onClick={onRent} disabled={pending || !isDomainAvailable}>RENT</Button>
+            {checkingAvailability && (
+              <Row style={{ alignItems: 'center', width: '100%', justifyContent: 'center' }}>
+                <TailSpin stroke='grey' width={16} />
+                <BaseText> Checking domain availability...</BaseText>
+              </Row>)}
+            {!checkingAvailability && isDomainAvailable === true && <BaseText>✅ Domain is available</BaseText>}
+            {!checkingAvailability && isDomainAvailable === false && <BaseText>❌ Domain unavailable</BaseText>}
+            <Button onClick={onRent} disabled={pending || !isDomainAvailable || checkingAvailability}>RENT</Button>
             <Col>
               <Row style={{ marginTop: 32, justifyContent: 'center' }}>
                 <Label>price</Label><BaseText>{price?.formatted} ONE</BaseText>
               </Row>
               <Row style={{ justifyContent: 'center' }}>
-                <SmallTextGrey>for {humanD(parameters.rentalPeriod)} </SmallTextGrey>
+                <SmallTextGrey>for {humanD(parameters.duration)} </SmallTextGrey>
               </Row>
             </Col>
           </Col>}
@@ -450,12 +470,12 @@ const Home = ({ subdomain = config.tld }) => {
           </Row>
           <Row>
             <Label>purchased on</Label>
-            <BaseText> {new Date(record.timeUpdated).toLocaleString()}</BaseText>
+            <BaseText> {new Date(record.rentTime).toLocaleString()}</BaseText>
           </Row>
           <Row>
             <Label>expires on</Label>
-            <BaseText> {new Date(record.timeUpdated + parameters.rentalPeriod).toLocaleString()}</BaseText>
-            {!expired && <SmallTextGrey>(in {humanD(record.timeUpdated + parameters.rentalPeriod - Date.now())})</SmallTextGrey>}
+            <BaseText> {new Date(record.expirationTime).toLocaleString()}</BaseText>
+            {!expired && <SmallTextGrey>(in {humanD(record.expirationTime - Date.now())})</SmallTextGrey>}
             {expired && <SmallText style={{ color: 'red' }}>(expired)</SmallText>}
           </Row>
           {tweetId &&
@@ -482,7 +502,7 @@ const Home = ({ subdomain = config.tld }) => {
                   <Label>Price</Label><BaseText>{price?.formatted} ONE</BaseText>
                 </Row>
                 <Row style={{ justifyContent: 'center' }}>
-                  <SmallTextGrey>for {humanD(parameters.rentalPeriod)} </SmallTextGrey>
+                  <SmallTextGrey>for {humanD(parameters.duration)} </SmallTextGrey>
                 </Row>
               </>)
             : (
@@ -506,7 +526,7 @@ const Home = ({ subdomain = config.tld }) => {
           <Row style={{ justifyContent: 'center' }}>
             <Label>renewal price</Label><BaseText>{price?.formatted} ONE</BaseText>
           </Row>
-          <SmallTextGrey>for {humanD(parameters.rentalPeriod)} </SmallTextGrey>
+          <SmallTextGrey>for {humanD(parameters.duration)} </SmallTextGrey>
           <Button onClick={() => ({})} disabled>RENEW</Button>
           <SmallTextGrey>*Renewal is disabled at this time. It will be re-enabled in the coming months.</SmallTextGrey>
           <SmallTextGrey>Your address: {address}</SmallTextGrey>
