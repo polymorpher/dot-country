@@ -159,7 +159,7 @@ contract DC is Pausable, Ownable {
      * commitment is just a keccak256 hash
      * @param name The name being registered
      * @param owner The address of the owner of the name being registered
-     * @param secret A secret passed by the client e.g. Math.random().toString(26).slice(2)
+     * @param secret A random secret passed by the client
      */
     function makeCommitment(string memory name, address owner, bytes32 secret) public view returns (bytes32) {
         bytes[] memory data;
@@ -201,7 +201,7 @@ contract DC is Pausable, Ownable {
      * this also takes a fee for the web2 registration which is held by DC.sol a check is made to ensure the value sent is sufficient for both fees
      * @param name The name to be registered e.g. for test.country it would be test
      * @param url A URL that can be embedded in a web2 default domain page e.g. a twitter post
-     * @param secret A secret passed by the client e.g. const [secret] = useState(Math.random().toString(26).slice(2))
+     * @param secret A random secret passed by the client
      */
     function register(string calldata name, string calldata url, bytes32 secret) public payable whenNotPaused {
         require(bytes(name).length <= 128, "DC: name too long");
@@ -236,7 +236,7 @@ contract DC is Pausable, Ownable {
      * it is passed a value to cover the costs of the ens registration
      * @param name The name to be registered e.g. for test.country it would be test
      * @param owner The owner address of the name to be registered
-     * @param secret A secret passed by the client e.g. const [secret] = useState(Math.random().toString(26).slice(2))
+     * @param secret A random secret passed by the client
      */
     function _register(string calldata name, address owner, bytes32 secret) internal whenNotPaused {
         uint256 ensPrice = getENSPrice(name);

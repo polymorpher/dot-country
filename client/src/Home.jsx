@@ -302,7 +302,6 @@ const Home = ({ subdomain = config.tld }) => {
         return toast.error(tweetId.error)
       }
       await client.commit({
-        registrarController: parameters.registrarController,
         name: sld,
         secret,
         onFailed: () => toast.error('Failed to commit purchase'),
