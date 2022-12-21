@@ -58,13 +58,13 @@ const getSubdomain = () => {
   }
   const host = window.location.host
   const parts = host.split('.')
-  if (parts.length <= 2) {
+  if (parts.length <= 1) {
     return ''
   }
-  if (parts.length <= 3) {
+  if (parts.length <= 2) {
     return parts[0]
   }
-  return parts.slice(0, parts.length - 2).join('.')
+  return parts.slice(0, parts.length - 1).join('.')
 }
 
 const parseBN = (n) => {
@@ -396,7 +396,7 @@ const Home = ({ subdomain = config.tld }) => {
 
   const expired = record?.expirationTime - Date.now() < 0
 
-  if (name === '') {
+  if (name === '' || name === 'names') {
     return (
       <Container>
         {lastRentedRecord &&
