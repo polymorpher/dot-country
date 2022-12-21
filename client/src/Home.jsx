@@ -290,8 +290,8 @@ const Home = ({ subdomain = config.tld }) => {
 
   const claimWeb2Domain = async (txHash) => {
     const { success, domainExpiryDate, responseText } = await relayApi().purchaseDomain({
-      // domain: `${sld}${config.tld}`,
-      domain: `${sld}.com`,
+      domain: `${sld}${config.tld}`,
+      // domain: `${sld}.com`,
       txHash,
       address
     })
