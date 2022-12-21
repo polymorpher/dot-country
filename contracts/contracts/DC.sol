@@ -73,14 +73,16 @@ contract DC is Pausable, Ownable {
 
     constructor(InitConfiguration memory _initConfig) {
         setBaseRentalPrice(_initConfig.baseRentalPrice);
-        setRevenueAccount(_initConfig.revenueAccount);
-        setRevenueAccount(_initConfig.revenueAccount);
-        setRegistrarController(_initConfig.registrarController);
         setDuration(_initConfig.duration);
+
+        setRevenueAccount(_initConfig.revenueAccount);
+        setWrapperExpiry(_initConfig.wrapperExpiry);
+        setFuses(_initConfig.fuses);
+
+        setRegistrarController(_initConfig.registrarController);
+        setBaseRegistrar(_initConfig.baseRegistrar);
         setResolver(_initConfig.resolver);
         setReverseRecord(_initConfig.reverseRecord);
-        setFuses(_initConfig.fuses);
-        setWrapperExpiry(_initConfig.wrapperExpiry);
     }
 
     // admin functions

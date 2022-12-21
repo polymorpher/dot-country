@@ -15,13 +15,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const maxWrapperExpiry = ethers.BigNumber.from(new Uint8Array(8).fill(255)).toString()
   const initConfiguration = {
     baseRentalPrice: ethers.utils.parseEther(config.baseRentalPrice),
-    revenueAccount: config.revenueAccount,
-    registrarController: config.registrarController,
     duration: config.duration * 3600 * 24,
-    resolver: config.resolver,
-    reverseRecord: config.reverseRecord,
+
+    revenueAccount: config.revenueAccount,
+    wrapperExpiry: maxWrapperExpiry,
     fuses: config.fuses,
-    wrapperExpiry: maxWrapperExpiry
+
+    registrarController: config.registrarController,
+    baseRegistrar: config.registrar,
+    resolver: config.resolver,
+    reverseRecord: config.reverseRecord
   }
   console.log(`DC initial Configuration: ${JSON.stringify(initConfiguration, null, 2)}`)
 
@@ -31,18 +34,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
     autoMine: true // speed up deployment on local network (ganache, hardhat), no effect on live networks
   })
+
   console.log('DC address:', DC.address)
   const dc = await ethers.getContractAt('DC', DC.address)
   const readConfiguration = {
     baseRentalPrice: ethers.utils.formatUnits(await dc.baseRentalPrice()),
-    revenueAccount: await dc.revenueAccount(),
-    registrarController: await dc.registrarController(),
     duration: (await dc.duration()).toString(),
-    resolver: await dc.resolver(),
-    reverseRecord: await dc.reverseRecord(),
+
+    revenueAccount: await dc.revenueAccount(),
+    wrapperExpiry: (await dc.wrapperExpiry()).toString(),
     fuses: await dc.fuses(),
-    wrapperExpiry: (await dc.wrapperExpiry()).toString()
-    // getPrice: (await dc.getENSPrice('test'))
+
+    registrarController: await dc.registrarController(),
+    baseRegistrar: await dc.baseRegistrar(),
+    resolver: await dc.resolver(),
+    reverseRecord: await dc.reverseRecord()
   }
   console.log(`DC Read Configuration: ${JSON.stringify(readConfiguration, null, 2)}`)
 }
