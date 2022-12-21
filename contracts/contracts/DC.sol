@@ -335,4 +335,8 @@ contract DC is Pausable, Ownable {
         (bool success, ) = revenueAccount.call{value: address(this).balance}("");
         require(success, "DC: failed to withdraw");
     }
+
+    receive() external payable{
+
+    }
 }

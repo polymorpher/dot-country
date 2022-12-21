@@ -93,6 +93,7 @@ const apis = ({ web3, address }) => {
     call,
     rent: async ({ name, url, secret, amount, onFailed, onSubmitted, onSuccess }) => {
       const secretHash = utils.keccak256(secret, true)
+      // console.log({ secretHash })
       return call({
         amount, parameters: [name, url, secretHash], methodName: 'register', onFailed, onSubmitted, onSuccess
       })
@@ -100,7 +101,6 @@ const apis = ({ web3, address }) => {
     commit: async ({ name, secret, onFailed, onSubmitted, onSuccess }) => {
       const secretHash = utils.keccak256(secret, true)
       const commitment = await contract.methods.makeCommitment(name, address, secretHash).call()
-      // console.log({ commitment })
       return call({
         onFailed,
         onSubmitted,

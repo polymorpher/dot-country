@@ -77,6 +77,9 @@ const parseBN = (n) => {
 }
 
 const parseTweetId = (urlInput) => {
+  if (urlInput === '') {
+    return { tweetId: '' }
+  }
   try {
     const url = new URL(urlInput)
     if (url.host !== 'twitter.com') {
@@ -115,6 +118,7 @@ const Home = ({ subdomain = config.tld }) => {
   const [pending, setPending] = useState(false)
   // TODO: add retry functionality
   const [regTxHash, setRegTxHash] = useState(false)
+  const [web2Acquired, setWeb2Acquired] = useState(false)
   const [checkingAvailability, setCheckingAvailability] = useState(false)
   const [isDomainAvailable, setIsDomainAvailable] = useState(null)
 
@@ -273,6 +277,17 @@ const Home = ({ subdomain = config.tld }) => {
     }
   }
 
+  const claimWeb2DomainWrapper = async () => {
+    setPending(true)
+    try {
+      await claimWeb2Domain(regTxHash)
+    } catch (ex) {
+      console.error(ex)
+    } finally {
+      setPending(false)
+    }
+  }
+
   const claimWeb2Domain = async (txHash) => {
     const { success, domainExpiryDate, responseText } = await relayApi().purchaseDomain({
       // domain: `${sld}${config.tld}`,
@@ -281,15 +296,16 @@ const Home = ({ subdomain = config.tld }) => {
       address
     })
     if (success) {
-      toast.success(`Web2 domain acquired. Expiration: ${domainExpiryDate}`)
+      toast.success('Web2 domain acquired')
+      setWeb2Acquired(true)
     } else {
       console.log(`failure reason: ${responseText}`)
-      toast.error(`Unable to purchase web2 domain. Reason: ${responseText}`)
+      toast.error(`Unable to acquire web2 domain. Reason: ${responseText}`)
     }
   }
 
   const onRent = async () => {
-    if (!url) {
+    if (!url && url !== '') {
       return toast.error('Invalid URL to embed')
     }
     if (!sld) {
@@ -317,6 +333,9 @@ const Home = ({ subdomain = config.tld }) => {
             </FlexRow>)
         }
       })
+      console.log('waiting for 5 seconds...')
+      await new Promise((resolve) => setTimeout(() => resolve(1), 5000))
+      console.log('registering...')
       const tx = await client.rent({
         name: sld,
         secret,
@@ -422,8 +441,10 @@ const Home = ({ subdomain = config.tld }) => {
               </Row>)}
             {!checkingAvailability && isDomainAvailable === true && <BaseText>✅ Domain is available</BaseText>}
             {!checkingAvailability && isDomainAvailable === false && <BaseText>❌ Domain unavailable</BaseText>}
-            <Button onClick={onRent} disabled={pending || !isDomainAvailable || checkingAvailability}>RENT</Button>
-            {price !== null && (
+            {!regTxHash && !web2Acquired && <Button onClick={onRent} disabled={pending || !isDomainAvailable || checkingAvailability}>RENT</Button>}
+            {regTxHash && !web2Acquired && <Button onClick={claimWeb2DomainWrapper} disabled={pending}>TRY AGAIN</Button>}
+            {web2Acquired && <BaseText>Your domain is ready! Checkout <a target='_blank' href={`http://${sld}${config.tld}`} rel='noreferrer'>{sld}{config.tld}</a></BaseText>}
+            {price !== null && !web2Acquired && (
               <Col>
                 <Row style={{ marginTop: 32, justifyContent: 'center' }}>
                   <Label>price</Label><BaseText>{price?.formatted} ONE</BaseText>
