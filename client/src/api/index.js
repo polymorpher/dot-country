@@ -1,8 +1,6 @@
 import Contract from 'web3-eth-contract'
 import config from '../../config'
 import DC from '../../abi/DC.json'
-import IBaseRegistrar from '../../abi/IBaseRegistrar.json'
-import RegistrarController from '../../abi/RegistrarController.json'
 import Constants from '../constants'
 import BN from 'bn.js'
 import axios from 'axios'
@@ -92,22 +90,14 @@ const apis = ({ web3, address }) => {
       return config.explorer.replace('{{txId}}', txHash)
     },
     call,
-    rent: async ({ name, url, duration = config.defaultDuration, amount, onFailed, onSubmitted, onSuccess }) => {
+    rent: async ({ name, url, secret, amount, onFailed, onSubmitted, onSuccess }) => {
       return call({
-        amount, parameters: [name, url, duration], methodName: 'rent', onFailed, onSubmitted, onSuccess
+        amount, parameters: [name, url, secret], methodName: 'register', onFailed, onSubmitted, onSuccess
       })
     },
-    commit: async ({ name, duration = config.defaultDuration, secret, onFailed, onSubmitted, onSuccess }) => {
-      const rc = new Contract(RegistrarController, config.registrarController)
-      const commitment = await rc.methods.makeCommitment(
-        name, address,
-        duration, secret,
-        config.resolver,
-        [], true,
-        0, new BN(new Uint8Array(8).fill(255)).toString()
-      ).call()
+    commit: async ({ name, secret, onFailed, onSubmitted, onSuccess }) => {
+      const commitment = await contract.methods.makeCommitment(name, address, secret).call()
       return call({
-        callee: config.registrarController,
         onFailed,
         onSubmitted,
         onSuccess,
@@ -121,27 +111,22 @@ const apis = ({ web3, address }) => {
       })
     },
     getParameters: async () => {
-      const [baseRentalPrice, rentalPeriod, priceMultiplier, lastRented, registrarController] = await Promise.all([
+      const [baseRentalPrice, duration, lastRented] = await Promise.all([
         contract.methods.baseRentalPrice().call(),
         contract.methods.rentalPeriod().call(),
-        contract.methods.priceMultiplier().call(),
-        contract.methods.lastRented().call(),
-        contract.methods.registrarController().call()
+        contract.methods.lastRented().call()
       ])
       return {
         baseRentalPrice: {
           amount: new BN(baseRentalPrice).toString(),
           formatted: web3.utils.fromWei(baseRentalPrice)
         },
-        rentalPeriod: new BN(rentalPeriod).toNumber() * 1000,
-        priceMultiplier: new BN(priceMultiplier).toNumber(),
+        duration: new BN(duration).toNumber() * 1000,
         lastRented,
-        registrarController
       }
     },
     getPrice: async ({ name }) => {
-      const nameBytes = web3.utils.keccak256(name)
-      const price = await contract.methods.getPrice(nameBytes).call({ from: address })
+      const price = await contract.methods.getPrice(name).call({ from: address })
       const amount = new BN(price).toString()
       return {
         amount,
@@ -151,24 +136,23 @@ const apis = ({ web3, address }) => {
     getRecord: async ({ name }) => {
       const nameBytes = web3.utils.keccak256(name)
       const result = await contract.methods.nameRecords(nameBytes).call()
-      const [renter, timeUpdated, lastPrice, url, prev, next] = Object.keys(result).map(k => result[k])
+      const [renter, rentTime, expirationTime, lastPrice, url, prev, next] = Object.keys(result).map(k => result[k])
       return {
         renter: renter === Constants.EmptyAddress ? null : renter,
+        rentTime: new BN(rentTime).toNumber() * 1000,
+        expirationTime: new BN(expirationTime).toNumber() * 1000,
         lastPrice: {
           amount: lastPrice,
           formatted: web3.utils.fromWei(lastPrice)
         },
-        timeUpdated: new BN(timeUpdated).toNumber() * 1000,
         url,
         prev,
         next
       }
     },
     checkAvailable: async ({ name }) => {
-      const c = new Contract(IBaseRegistrar, config.registrar)
-      const h = web3.utils.keccak256(name).slice(2)
-      const isAvailable = await c.methods.available(new BN(h, 'hex').toString()).call()
-      return isAvailable
+      const isAvailable = await contract.methods.available(name).call()
+      return isAvailable?.toString()?.toLowerCase() === 'true'
     }
   }
 }

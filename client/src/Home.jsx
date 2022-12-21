@@ -308,7 +308,7 @@ const Home = ({ subdomain = config.tld }) => {
             </FlexRow>)
         }
       })
-      const tx = await client.register({
+      const tx = await client.rent({
         name: sld,
         secret,
         url: tweetId.tweetId.toString(),
