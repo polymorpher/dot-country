@@ -198,9 +198,8 @@ const Home = ({ subdomain = config.tld }) => {
   useEffect(() => {
     setClient(apis({ web3, address }))
     if (!web3 || !address) {
-      return
+
     }
-    client.getPrice({ name }).then(p => setPrice(p))
   }, [web3, address])
 
   useEffect(() => {
@@ -209,8 +208,14 @@ const Home = ({ subdomain = config.tld }) => {
     }
     client.getParameters().then(p => setParameters(p))
     client.getRecord({ name }).then(r => setRecord(r))
-    client.getPrice({ name }).then(p => setPrice(p))
   }, [client])
+
+  useEffect(() => {
+    if (!client || !isOwner || !address) {
+      return
+    }
+    client.getPrice({ name }).then(p => setPrice(p))
+  }, [client, isOwner, address])
 
   useEffect(() => {
     if (!parameters?.lastRented) {
@@ -352,7 +357,8 @@ const Home = ({ subdomain = config.tld }) => {
         const { isAvailable } = await relayApi().checkDomain({ sld })
         const isAvailableWeb3 = await client.checkAvailable({ name: sld })
         console.log({ isAvailableWeb3, isAvailable })
-        setIsDomainAvailable(isAvailable && isAvailableWeb3)
+        const domainAvailable = isAvailable && isAvailableWeb3
+        setIsDomainAvailable(domainAvailable)
       } catch (ex) {
         console.error(ex)
         toast.error('Cannot check domain availability')
@@ -363,6 +369,12 @@ const Home = ({ subdomain = config.tld }) => {
     const timer = setTimeout(f, 1000)
     return () => { clearTimeout(timer) }
   }, [sld, client])
+  useEffect(() => {
+    if (!isDomainAvailable || !sld || !client) {
+      return
+    }
+    client.getPrice({ name: sld }).then(p => setPrice(p))
+  }, [isDomainAvailable, sld, client])
 
   const expired = record?.expirationTime - Date.now() < 0
 
@@ -407,19 +419,20 @@ const Home = ({ subdomain = config.tld }) => {
             {checkingAvailability && (
               <Row style={{ alignItems: 'center', width: '100%', justifyContent: 'center' }}>
                 <TailSpin stroke='grey' width={16} />
-                <BaseText> Checking domain availability...</BaseText>
+                <BaseText> Checking domain price and availability...</BaseText>
               </Row>)}
             {!checkingAvailability && isDomainAvailable === true && <BaseText>✅ Domain is available</BaseText>}
             {!checkingAvailability && isDomainAvailable === false && <BaseText>❌ Domain unavailable</BaseText>}
             <Button onClick={onRent} disabled={pending || !isDomainAvailable || checkingAvailability}>RENT</Button>
-            <Col>
-              <Row style={{ marginTop: 32, justifyContent: 'center' }}>
-                <Label>price</Label><BaseText>{price?.formatted} ONE</BaseText>
-              </Row>
-              <Row style={{ justifyContent: 'center' }}>
-                <SmallTextGrey>for {humanD(parameters.duration)} </SmallTextGrey>
-              </Row>
-            </Col>
+            {price !== null && (
+              <Col>
+                <Row style={{ marginTop: 32, justifyContent: 'center' }}>
+                  <Label>price</Label><BaseText>{price?.formatted} ONE</BaseText>
+                </Row>
+                <Row style={{ justifyContent: 'center' }}>
+                  <SmallTextGrey>for {humanD(parameters.duration)} </SmallTextGrey>
+                </Row>
+              </Col>)}
           </Col>}
       </Container>
     )
