@@ -5,8 +5,8 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
-// import {IETHRegistrarController, IPriceOracle} from "@ensdomains/ens-contracts/contracts/ethregistrar/IETHRegistrarController.sol";
-import {IETHRegistrarController, IPriceOracle} from "./IETHRegistrarController.sol";
+import "./IRegistrarController.sol";
+import "./IBaseRegistrar.sol";
 
 /**
     @title A domain manager contract for .country (DC -  Dot Country)
@@ -14,75 +14,62 @@ import {IETHRegistrarController, IPriceOracle} from "./IETHRegistrarController.s
     @notice This contract allows the rental of domains under .country (”DC”)
     it integrates with the ENSRegistrarController and the ENS system as a whole for persisting of domain registrations.
     It is responsible for holding the revenue from these registrations for the web2 portion of the registration process,
-    with the web3 regisgtration revenue being held by the RegistrarController contract.
+    with the web3 registration revenue being held by the RegistrarController contract.
     An example would be as follows Alice registers alice.com and calls the register function with an amount of 10,000 ONE.
     5000 ONE would be held by the DC contract and the remaining 5000 funds would be sent to the RegistrarController using 
     the register function.
 
  */
 contract DC is Pausable, Ownable {
-    uint256 constant MIN_DURATION = 365 days;
-    bytes constant EMPTY_DATA = bytes("");
-
+    uint256 public constant MIN_DURATION = 365 days;
+    uint256 public constant GRACE_PERIOD = 90 days;
     bool public initialized;
     uint256 public baseRentalPrice;
     address public revenueAccount;
-    address public registrarController;
+    IRegistrarController public registrarController;
+    IBaseRegistrar public baseRegistrar;
     uint256 public duration;
     address public resolver;
     bool public reverseRecord;
     uint32 public fuses;
     uint64 public wrapperExpiry;
 
-    IETHRegistrarController registrarControllerContract =
-        IETHRegistrarController(registrarController);
-    IPriceOracle priceOracleContract = IPriceOracle(registrarController);
-
-    // Use a structure for Initial Configuration to fix stack too deep error
     struct InitConfiguration {
         uint256 baseRentalPrice;
-        address revenueAccount;
-        address registrarController;
         uint256 duration;
+
+        // 32-bytes block
+        address revenueAccount;
+        uint64 wrapperExpiry;
+        uint32 fuses;
+
+        // 61-bytes
+        address registrarController;
+        address baseRegistrar;
         address resolver;
         bool reverseRecord;
-        uint32 fuses;
-        uint64 wrapperExpiry;
     }
 
     struct NameRecord {
         address renter;
-        uint32 timeUpdated;
+        uint256 rentTime;
+        uint256 expirationTime;
         uint256 lastPrice;
         string url;
+        string prev;
+        string next;
     }
 
     mapping(bytes32 => NameRecord) public nameRecords;
-
     string public lastRented;
 
-    // events
+    bytes32[] public keys;
 
-    event NameRented(
-        string indexed name,
-        address indexed renter,
-        uint256 price,
-        string url
-    );
-    event URLUpdated(
-        string indexed name,
-        address indexed renter,
-        string oldUrl,
-        string newUrl
-    );
+    event NameRented(string indexed name, address indexed renter, uint256 price, string url);
+    event NameRenewed(string indexed name, address indexed renter, uint256 price, string url);
+    event NameReinstated(string indexed name, address indexed renter, uint256 price, address oldRenter);
+    event URLUpdated(string indexed name, address indexed renter, string oldUrl, string newUrl);
     event RevenueAccountChanged(address from, address to);
-
-    /**
-     * @dev Emitted if setting the duration e.g. if the owner tried to se the duration less than the Minimum duration of 365 days
-     * @param duration The duration of the rental period
-     * @param reason The reason for the error
-     */
-    error setDurationFailed(uint256 duration, string reason);
 
     constructor(InitConfiguration memory _initConfig) {
         setBaseRentalPrice(_initConfig.baseRentalPrice);
@@ -106,20 +93,16 @@ contract DC is Pausable, Ownable {
         revenueAccount = _revenueAccount;
     }
 
-    function setRegistrarController(address _registrarController)
-        public
-        onlyOwner
-    {
-        registrarController = _registrarController;
+    function setRegistrarController(address _registrarController) public onlyOwner {
+        registrarController = IRegistrarController(_registrarController);
+    }
+
+    function setBaseRegistrar(address _baseRegistrar) public onlyOwner {
+        baseRegistrar = IBaseRegistrar(_baseRegistrar);
     }
 
     function setDuration(uint256 _duration) public onlyOwner {
-        if (_duration < MIN_DURATION) {
-            revert setDurationFailed(
-                _duration,
-                "Duration less than the minimum of 365 days"
-            );
-        }
+        require (_duration >= MIN_DURATION, "duration less than minimum");
         duration = _duration;
     }
 
@@ -151,37 +134,21 @@ contract DC is Pausable, Ownable {
      * @dev `available` calls RegistrarController to check if a name is available
      * @param name The name to be checked being registered
      */
-    function available(string memory name) public returns (bool) {
-        return registrarControllerContract.available(name);
+    function available(string memory name) public view returns (bool) {
+        NameRecord storage record = nameRecords[keccak256(bytes(name))];
+        return registrarController.available(name) && (record.renter == address(0) || uint256(record.expirationTime) + GRACE_PERIOD <= block.timestamp);
     }
 
     /**
-     * @dev `makeCommitment` calls RegistrarController makeCommitment with prepopulated values
+     * @dev `makeCommitment` calls RegistrarController makeCommitment with pre-populated values
      * commitment is just a keccak256 hash
      * @param name The name being registered
      * @param owner The address of the owner of the name being registered
-     * @param secret A secret passed by the client e.g. const [secret] = useState(Math.random().toString(26).slice(2))
+     * @param secret A secret passed by the client e.g. Math.random().toString(26).slice(2)
      */
-    function makeCommitment(
-        string memory name,
-        address owner,
-        bytes32 secret
-    ) public view returns (bytes32) {
-        bytes32 label = keccak256(bytes(name));
-        return
-            keccak256(
-                abi.encode(
-                    label,
-                    owner,
-                    duration,
-                    resolver,
-                    bytes(""),
-                    secret,
-                    reverseRecord,
-                    fuses,
-                    wrapperExpiry
-                )
-            );
+    function makeCommitment(string memory name, address owner, bytes32 secret) public view returns (bytes32) {
+        bytes[] memory data;
+        return registrarController.makeCommitment(name, owner, duration, secret, resolver, data, reverseRecord, fuses, wrapperExpiry);
     }
 
     /**
@@ -189,7 +156,7 @@ contract DC is Pausable, Ownable {
      * @param commitment The commitment calculated by makeCommitment
      */
     function commit(bytes32 commitment) public {
-        registrarControllerContract.commit(commitment);
+        registrarController.commit(commitment);
     }
 
     /**
@@ -198,28 +165,19 @@ contract DC is Pausable, Ownable {
      * @param name The name being registered
      */
     function getENSPrice(string memory name) public view returns (uint256) {
-        IPriceOracle.Price memory price = registrarControllerContract.rentPrice(
-            name,
-            duration
-        );
-        return (price.base + price.premium);
+        IRegistrarController.Price memory price = registrarController.rentPrice(name, duration);
+        return price.base + price.premium;
     }
 
-    /**
-     * @dev `getCombinedPrice` gets the price needed to be paid which calculated as
-     * the baseRentalPrice + RegistrarController.rentPrice (price.base + price.premium)
-     * @param name The name being registered
-     */
-    function getCombinedPrice(string memory name)
-        public
-        view
-        returns (uint256, uint256)
-    {
-        IPriceOracle.Price memory price = registrarControllerContract.rentPrice(
-            name,
-            duration
-        );
-        return (baseRentalPrice, (price.base + price.premium));
+    function getPrice(string memory name) public view returns (uint256) {
+        uint256 ensPrice = getENSPrice(name);
+        return ensPrice + baseRentalPrice;
+    }
+
+    function _updateLinkedListWithNewName(NameRecord storage nameRecord, string memory name) internal {
+        nameRecords[keccak256(bytes(lastRented))].next = name;
+        nameRecord.prev = lastRented;
+        lastRented = name;
     }
 
     /**
@@ -229,33 +187,28 @@ contract DC is Pausable, Ownable {
      * @param url A URL that can be embedded in a web2 default domain page e.g. a twitter post
      * @param secret A secret passed by the client e.g. const [secret] = useState(Math.random().toString(26).slice(2))
      */
-    function register(
-        string calldata name,
-        string calldata url,
-        bytes32 secret
-    ) public payable whenNotPaused {
+    function register(string calldata name, string calldata url, bytes32 secret) public payable whenNotPaused {
         require(bytes(name).length <= 128, "DC: name too long");
         require(bytes(url).length <= 1024, "DC: url too long");
-        uint256 ensPrice = getENSPrice(name);
-        uint256 price = baseRentalPrice + ensPrice;
+        uint256 price = getPrice(name);
         require(price <= msg.value, "DC: insufficient payment");
-        _register(name, msg.sender, secret, ensPrice);
+        require(available(name), "DC: name unavailable");
+        _register(name, msg.sender, secret);
         // Update Name Record and send events
         uint256 tokenId = uint256(keccak256(bytes(name)));
         NameRecord storage nameRecord = nameRecords[bytes32(tokenId)];
         nameRecord.renter = msg.sender;
         nameRecord.lastPrice = price;
-        nameRecord.timeUpdated = uint32(block.timestamp);
+        nameRecord.rentTime = block.timestamp;
+        nameRecord.expirationTime = block.timestamp + duration;
         if (bytes(url).length > 0) {
             nameRecord.url = url;
         }
-
-        lastRented = name;
-
+        _updateLinkedListWithNewName(nameRecord, name);
         emit NameRented(name, msg.sender, price, url);
 
         // Return any excess funds
-        uint256 excess = msg.value - (baseRentalPrice + ensPrice);
+        uint256 excess = msg.value - price;
         if (excess > 0) {
             (bool success, ) = msg.sender.call{value: excess}("");
             require(success, "cannot refund excess");
@@ -268,26 +221,11 @@ contract DC is Pausable, Ownable {
      * @param name The name to be registered e.g. for test.country it would be test
      * @param owner The owner address of the name to be registered
      * @param secret A secret passed by the client e.g. const [secret] = useState(Math.random().toString(26).slice(2))
-     * @param ensPrice the price paid to ens for the registration
      */
-    function _register(
-        string calldata name,
-        address owner,
-        bytes32 secret,
-        uint256 ensPrice
-    ) internal whenNotPaused {
+    function _register(string calldata name, address owner, bytes32 secret) internal whenNotPaused {
+        uint256 ensPrice = getENSPrice(name);
         bytes[] memory emptyData;
-        registrarControllerContract.register{value: ensPrice}(
-            name,
-            owner,
-            duration,
-            secret,
-            resolver,
-            emptyData,
-            reverseRecord,
-            fuses,
-            wrapperExpiry
-        );
+        registrarController.register{value: ensPrice}(name, owner, duration, secret, resolver, emptyData, reverseRecord, fuses, wrapperExpiry);
     }
 
     /**
@@ -297,80 +235,87 @@ contract DC is Pausable, Ownable {
      * @param name The name to be registered e.g. for test.country it would be test
      * @param url A URL that can be embedded in a web2 default domain page e.g. a twitter post
      */
-    function renew(
-        string calldata name,
-        string calldata url,
-        address owner
-    ) public payable whenNotPaused {
+    function renew(string calldata name, string calldata url) public payable whenNotPaused {
         require(bytes(name).length <= 128, "DC: name too long");
         require(bytes(url).length <= 1024, "DC: url too long");
+        NameRecord storage nameRecord = nameRecords[keccak256(bytes(name))];
+        require(nameRecord.renter != address(0), "DC: name is not rented");
+        require(nameRecord.expirationTime + GRACE_PERIOD >= block.timestamp, "DC: cannot renew after grace period" );
         uint256 ensPrice = getENSPrice(name);
         uint256 price = baseRentalPrice + ensPrice;
-        require((price) <= msg.value, "DC: insufficient payment");
-        _renew(name, ensPrice);
+        require(price <= msg.value, "DC: insufficient payment");
 
-        // Update Name Record and send events
-        uint256 tokenId = uint256(keccak256(bytes(name)));
-        NameRecord storage nameRecord = nameRecords[bytes32(tokenId)];
-        nameRecord.renter = owner;
+        registrarController.renew{value: ensPrice}(name, duration);
+
         nameRecord.lastPrice = price;
-        nameRecord.timeUpdated = uint32(block.timestamp);
+        nameRecord.expirationTime += duration;
+
         if (bytes(url).length > 0) {
             nameRecord.url = url;
         }
 
-        lastRented = name;
+        emit NameRenewed(name, nameRecord.renter, price, url);
 
-        emit NameRented(name, owner, price, url);
-
-        uint256 excess = msg.value - (baseRentalPrice + ensPrice);
+        uint256 excess = msg.value - price;
         if (excess > 0) {
             (bool success, ) = msg.sender.call{value: excess}("");
             require(success, "cannot refund excess");
         }
     }
 
-    /**
-     * @dev `_renew` calls RegistrarController renw and is used to renew a name
-     * it is passed a value to cover the costs of the ens renewal
-     * duration is set at the contract level
-     * @param name The name to be registered e.g. for test.country it would be test
-     * @param ensPrice the price paid to ens for the registration
-     */
-    function _renew(string calldata name, uint256 ensPrice)
-        internal
-        whenNotPaused
-    {
-        registrarControllerContract.renew{value: ensPrice}(name, duration);
+    function getReinstateCost(string calldata name) public view returns (uint256){
+        uint256 tokenId = uint256(keccak256(bytes(name)));
+        NameRecord storage nameRecord = nameRecords[bytes32(tokenId)];
+        uint256 expiration = baseRegistrar.nameExpires(tokenId);
+        uint256 chargeableDuration = 0;
+        if (nameRecord.expirationTime == 0) {
+            chargeableDuration = expiration - block.timestamp;
+        }
+        if (expiration > nameRecord.expirationTime) {
+            chargeableDuration = expiration - nameRecord.expirationTime;
+        }
+        uint256 charge = (chargeableDuration * 1e18 / duration * baseRentalPrice) / 1e18;
+        return charge;
     }
 
-    function updateURL(string calldata name, string calldata url)
-        public
-        payable
-        whenNotPaused
-    {
-        require(
-            nameRecords[keccak256(bytes(name))].renter == msg.sender,
-            "DC: not owner"
-        );
+    function reinstate(string calldata name) public payable whenNotPaused {
+        uint256 tokenId = uint256(keccak256(bytes(name)));
+        NameRecord storage nameRecord = nameRecords[bytes32(tokenId)];
+        require(!registrarController.available(name), "DC: cannot reinstate an available name in ENS");
+        uint256 expiration = baseRegistrar.nameExpires(tokenId);
+        require(expiration > block.timestamp, "DC: name expired");
+        address domainOwner = baseRegistrar.ownerOf(tokenId);
+        uint256 charge = getReinstateCost(name);
+
+        require(msg.value >= charge, "DC: insufficient payment");
+        nameRecord.expirationTime = expiration;
+        if(nameRecord.rentTime == 0){
+            nameRecord.rentTime = block.timestamp;
+        }
+        if(nameRecord.renter == address(0)){
+            _updateLinkedListWithNewName(nameRecord, name);
+        }
+        emit NameReinstated(name, domainOwner, charge, nameRecord.renter);
+        nameRecord.renter = domainOwner;
+        uint256 excess = msg.value - charge;
+        if (excess > 0) {
+            (bool success, ) = msg.sender.call{value: excess}("");
+            require(success, "cannot refund excess");
+        }
+    }
+
+    function updateURL(string calldata name, string calldata url) public payable whenNotPaused {
+        NameRecord storage r = nameRecords[keccak256(bytes(name))];
+        require(r.renter == msg.sender, "DC: not owner");
+        require(r.expirationTime > block.timestamp, "DC: expired");
         require(bytes(url).length <= 1024, "DC: url too long");
-        emit URLUpdated(
-            name,
-            msg.sender,
-            nameRecords[keccak256(bytes(name))].url,
-            url
-        );
+        emit URLUpdated(name, msg.sender, nameRecords[keccak256(bytes(name))].url, url);
         nameRecords[keccak256(bytes(name))].url = url;
     }
 
     function withdraw() external {
-        require(
-            msg.sender == owner() || msg.sender == revenueAccount,
-            "DC: must be owner or revenue account"
-        );
-        (bool success, ) = revenueAccount.call{value: address(this).balance}(
-            ""
-        );
+        require(msg.sender == owner() || msg.sender == revenueAccount, "DC: must be owner or revenue account");
+        (bool success, ) = revenueAccount.call{value: address(this).balance}("");
         require(success, "DC: failed to withdraw");
     }
 }

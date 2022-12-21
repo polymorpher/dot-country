@@ -2,15 +2,19 @@
 
 pragma solidity ~0.8.17;
 
-import "./IPriceOracle.sol";
+interface IRegistrarController {
+    function base() external view returns(address);
 
-interface IETHRegistrarController {
+    struct Price {
+        uint256 base;
+        uint256 premium;
+    }
     function rentPrice(string memory, uint256)
         external
         view
-        returns (IPriceOracle.Price memory);
+        returns (Price memory);
 
-    function available(string memory) external returns (bool);
+    function available(string memory) external view returns (bool);
 
     function makeCommitment(
         string memory,
@@ -22,7 +26,7 @@ interface IETHRegistrarController {
         bool,
         uint32,
         uint64
-    ) external returns (bytes32);
+    ) external view returns (bytes32);
 
     function commit(bytes32) external;
 
