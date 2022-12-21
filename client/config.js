@@ -8,10 +8,8 @@ const config = {
   defaultRPC: process.env.DEFAULT_RPC || 'https://api.harmony.one',
   defaultDuration: parseInt(process.env.DEFAULT_DURATION) || 365 * 3600 * 24,
   registrarRelayer: process.env.REGISTRAR_RELAYER || 'https://1ns-registrar-relayer.hiddenstate.xyz',
-  registrarController: process.env.REGISTRAR_CONTROLLER || '0x8De3BeF9ad3C1DF3816f62567Ead61378864572a',
-  registrar: process.env.REGISTRAR || '0x2E44a57dB0bF4F2FaaC4D6332c17Ef74AC62afD3',
   tld: process.env.TLD || '.country',
-  tldHub: process.env.TLD_HUB || '1ns.country',
+  tldHub: process.env.TLD_HUB || 'names.country',
   tldExample: process.env.TLD_EXAMPLE || '1ns-example.country',
   chainParameters: process.env.CHAIN_PARAMETERS
     ? JSON.parse(process.env.CHAIN_PARAMETERS)
