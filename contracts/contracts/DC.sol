@@ -23,7 +23,6 @@ import "./IBaseRegistrar.sol";
 contract DC is Pausable, Ownable {
     uint256 public constant MIN_DURATION = 365 days;
     uint256 public constant GRACE_PERIOD = 90 days;
-    bool public initialized;
     uint256 public baseRentalPrice;
     address public revenueAccount;
     IRegistrarController public registrarController;
@@ -299,6 +298,7 @@ contract DC is Pausable, Ownable {
         }
         emit NameReinstated(name, domainOwner, charge, nameRecord.renter);
         nameRecord.renter = domainOwner;
+        nameRecord.lastPrice = charge;
         uint256 excess = msg.value - charge;
         if (excess > 0) {
             (bool success, ) = msg.sender.call{value: excess}("");
