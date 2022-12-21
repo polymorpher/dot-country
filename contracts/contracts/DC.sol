@@ -131,6 +131,20 @@ contract DC is Pausable, Ownable {
         _unpause();
     }
 
+
+    function numRecords() public view returns (uint256){
+        return keys.length;
+    }
+
+    function getRecordKeys(uint256 start, uint256 end) public view returns (bytes32[] memory){
+        require(end > start, "D1DC: end must be greater than start");
+        bytes32[] memory slice = new bytes32[](end - start);
+        for (uint256 i = start; i < end; i++) {
+            slice[i - start] = keys[i];
+        }
+        return slice;
+    }
+
     /**
      * @dev `available` calls RegistrarController to check if a name is available
      * @param name The name to be checked being registered
@@ -179,6 +193,7 @@ contract DC is Pausable, Ownable {
         nameRecords[keccak256(bytes(lastRented))].next = name;
         nameRecord.prev = lastRented;
         lastRented = name;
+        keys.push(keccak256(bytes(name)));
     }
 
     /**

@@ -4,6 +4,7 @@ import DC from '../../abi/DC.json'
 import Constants from '../constants'
 import BN from 'bn.js'
 import axios from 'axios'
+import { utils } from '../utils'
 
 const base = axios.create({
   baseURL: process.env.REGISTRAR_RELAYER,
@@ -113,7 +114,7 @@ const apis = ({ web3, address }) => {
     getParameters: async () => {
       const [baseRentalPrice, duration, lastRented] = await Promise.all([
         contract.methods.baseRentalPrice().call(),
-        contract.methods.rentalPeriod().call(),
+        contract.methods.duration().call(),
         contract.methods.lastRented().call()
       ])
       return {
@@ -134,7 +135,7 @@ const apis = ({ web3, address }) => {
       }
     },
     getRecord: async ({ name }) => {
-      const nameBytes = web3.utils.keccak256(name)
+      const nameBytes = utils.keccak256(name, true)
       const result = await contract.methods.nameRecords(nameBytes).call()
       const [renter, rentTime, expirationTime, lastPrice, url, prev, next] = Object.keys(result).map(k => result[k])
       return {
