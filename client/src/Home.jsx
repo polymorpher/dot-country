@@ -194,16 +194,7 @@ const Home = ({ subdomain = config.tld }) => {
   }, [])
 
   useEffect(() => {
-    if (web3 && !address) {
-      connect(true)
-    }
-  }, [web3, address])
-
-  useEffect(() => {
     setClient(apis({ web3, address }))
-    if (!web3 || !address) {
-
-    }
   }, [web3, address])
 
   useEffect(() => {
@@ -289,7 +280,7 @@ const Home = ({ subdomain = config.tld }) => {
   }
 
   const claimWeb2Domain = async (txHash) => {
-    const { success, domainExpiryDate, responseText } = await relayApi().purchaseDomain({
+    const { success, responseText } = await relayApi().purchaseDomain({
       domain: `${sld}${config.tld}`,
       // domain: `${sld}.com`,
       txHash,
@@ -484,12 +475,14 @@ const Home = ({ subdomain = config.tld }) => {
         <DescResponsive style={{ marginTop: 16 }}>
           <Row style={{ justifyContent: 'space-between' }}>
 
-            {record.prev &&
-              <a href={`https://${record.prev}${config.tld}`} target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
-                <FlexRow style={{ gap: 16 }}>
-                  <SmallTextGrey>{'<'} prev</SmallTextGrey><SmallTextGrey>{record.prev}{config.tld}</SmallTextGrey>
-                </FlexRow>
-              </a>}
+            {record.prev
+              ? (
+                <a href={`https://${record.prev}${config.tld}`} target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
+                  <FlexRow style={{ gap: 16 }}>
+                    <SmallTextGrey>{'<'} prev</SmallTextGrey><SmallTextGrey>{record.prev}{config.tld}</SmallTextGrey>
+                  </FlexRow>
+                </a>)
+              : (<BaseText> </BaseText>)}
 
             {record.next &&
               <a href={`https://${record.next}${config.tld}`} target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
@@ -528,15 +521,9 @@ const Home = ({ subdomain = config.tld }) => {
             ? (
               <>
                 <Title style={{ marginTop: 32, textAlign: 'center' }}>
-                  This domain is already taken. Get your own at
-                  <a href={`https://${config.tldHub}`} target='_blank' rel='noreferrer'>{config.tldHub}</a>
+                  This domain is already taken
                 </Title>
-                <Row style={{ marginTop: 16, justifyContent: 'center' }}>
-                  <Label>Price</Label><BaseText>{price?.formatted} ONE</BaseText>
-                </Row>
-                <Row style={{ justifyContent: 'center' }}>
-                  <SmallTextGrey>for {humanD(parameters.duration)} </SmallTextGrey>
-                </Row>
+                <BaseText>Get your own at <a href={`https://${config.tldHub}`} target='_blank' rel='noreferrer'>{config.tldHub}</a></BaseText>
               </>)
             : (
               <Title style={{ marginTop: 32, textAlign: 'center' }}>
