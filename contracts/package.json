@@ -1,7 +1,7 @@
 {
-    "name": "1-country-contracts",
+    "name": "dot-country-contracts",
     "version": "0.0.1",
-    "description": "Contracts for .1.country",
+    "description": "Contracts for dot-country",
     "license": "MIT",
     "files": [
         "artifacts",
