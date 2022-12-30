@@ -1,4 +1,4 @@
-# Project .country)
+# Project .country
 
 - [client](https://github.com/polymorpher/dot-country/tree/main/client): React-based frontend, communicates with the .country smart contracts on blockchain and [ENS Registrar Relay](https://github.com/polymorpher/ens-registrar-relay)
 - [contracts](https://github.com/polymorpher/dot-country/tree/main/contracts): The .country smart contracts and deployment scripts
