@@ -10,7 +10,7 @@ const config = {
   registrarRelayer: process.env.REGISTRAR_RELAYER || 'https://1ns-registrar-relayer.hiddenstate.xyz',
   tld: process.env.TLD || '.country',
   tldHub: process.env.TLD_HUB || 'names.country',
-  tldExample: process.env.TLD_EXAMPLE || '1ns-example.country',
+  tldExample: process.env.TLD_EXAMPLE || 'opendevelopment.country',
   chainParameters: process.env.CHAIN_PARAMETERS
     ? JSON.parse(process.env.CHAIN_PARAMETERS)
     : {

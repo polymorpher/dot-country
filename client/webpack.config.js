@@ -6,8 +6,6 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const Dotenv = require('dotenv-webpack')
 
-console.log(!process.env.HTTP)
-
 module.exports = {
   devServer: {
     port: 3100,
