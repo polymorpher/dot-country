@@ -375,7 +375,7 @@ const Home = ({ subdomain = config.tld }) => {
         if (sld.length <= 2 && !nameUtils.RESTRICTED_VALID_NAME.test(sld.toLowerCase())) {
           return toast.error('Short domain names (<2 characters) cannot have hyphen and must be alphanumerical')
         }
-        if (sld.length <= 2 && nameUtils.SPECIAL_NAMES.test(sld.toLowerCase())) {
+        if (sld.length <= 2 && nameUtils.SPECIAL_NAMES.includes(sld.toLowerCase())) {
           return toast.error('This domain name is reserved for special purpose')
         }
         if (!nameUtils.isValidName(sld.toLowerCase())) {
