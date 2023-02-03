@@ -12,6 +12,7 @@ import { toast } from 'react-toastify'
 import apis, { relayApi } from './api'
 import BN from 'bn.js'
 import { TailSpin } from 'react-loading-icons'
+import { nameUtils } from './utils'
 
 const humanD = humanizeDuration.humanizer({ round: true, largest: 1 })
 
@@ -129,6 +130,7 @@ const Home = ({ subdomain = config.tld }) => {
   const name = getSubdomain()
 
   const isOwner = address && record?.renter && (record.renter.toLowerCase() === address.toLowerCase())
+  const isReserved = nameUtils.isReservedName(sld)
 
   const switchChain = async (address, silence) => {
     return window.ethereum.request({
@@ -281,7 +283,7 @@ const Home = ({ subdomain = config.tld }) => {
 
   const claimWeb2Domain = async (txHash) => {
     const { success, responseText } = await relayApi().purchaseDomain({
-      domain: `${sld}${config.tld}`,
+      domain: `${sld.toLowerCase()}${config.tld}`,
       // domain: `${sld}.com`,
       txHash,
       address
@@ -302,6 +304,9 @@ const Home = ({ subdomain = config.tld }) => {
     if (!sld) {
       return toast.error('Invalid domain')
     }
+    if (!nameUtils.isValidName(sld)) {
+      return toast.error('Must be alphanumerical characters')
+    }
     setPending(true)
     try {
       const tweetId = parseTweetId(url)
@@ -309,7 +314,7 @@ const Home = ({ subdomain = config.tld }) => {
         return toast.error(tweetId.error)
       }
       await client.commit({
-        name: sld,
+        name: sld.toLowerCase(),
         secret,
         onFailed: () => toast.error('Failed to commit purchase'),
         onSuccess: (tx) => {
@@ -328,7 +333,7 @@ const Home = ({ subdomain = config.tld }) => {
       await new Promise((resolve) => setTimeout(() => resolve(1), 5000))
       console.log('registering...')
       const tx = await client.rent({
-        name: sld,
+        name: sld.toLowerCase(),
         secret,
         url: tweetId.tweetId.toString(),
         amount: new BN(price.amount).toString(),
@@ -347,7 +352,12 @@ const Home = ({ subdomain = config.tld }) => {
       })
       const txHash = tx.transactionHash
       setRegTxHash(txHash)
-      await claimWeb2Domain(txHash)
+      try {
+        await claimWeb2Domain(txHash)
+      } catch (ex) {
+        console.error(ex)
+        toast.error('Failed to setup web2 domain. Please contact us on GitHub and create an issue.')
+      }
     } catch (ex) {
       console.error(ex)
       toast.error(`Unexpected error: ${ex.toString()}`)
@@ -363,10 +373,10 @@ const Home = ({ subdomain = config.tld }) => {
     async function f () {
       try {
         setCheckingAvailability(true)
-        const { isAvailable } = await relayApi().checkDomain({ sld })
-        const isAvailableWeb3 = await client.checkAvailable({ name: sld })
-        console.log({ isAvailableWeb3, isAvailable })
-        const domainAvailable = isAvailable && isAvailableWeb3
+        const { isAvailable } = await relayApi().checkDomain({ sld: sld.toLowerCase() })
+        const isAvailableWeb3 = await client.checkAvailable({ name: sld.toLowerCase() })
+        console.log({ isReserved, isAvailableWeb3, isAvailable })
+        const domainAvailable = isReserved || (isAvailable && isAvailableWeb3)
         setIsDomainAvailable(domainAvailable)
       } catch (ex) {
         console.error(ex)
@@ -382,7 +392,7 @@ const Home = ({ subdomain = config.tld }) => {
     if (!isDomainAvailable || !sld || !client) {
       return
     }
-    client.getPrice({ name: sld }).then(p => setPrice(p))
+    client.getPrice({ name: sld.toLowerCase() }).then(p => setPrice(p))
   }, [isDomainAvailable, sld, client])
 
   const expired = record?.expirationTime - Date.now() < 0
@@ -411,6 +421,8 @@ const Home = ({ subdomain = config.tld }) => {
           <BaseText>- It also works in browser! This domain is backward compatible with web2 </BaseText>
           <BaseText>- Later, you can setup a simple website on the domain, configure DNS, and do many things no one in web3 has done before</BaseText>
           <BaseText>- example: <a href={`https://${config.tldExample}`} target='_blank' rel='noreferrer'>{config.tldExample}</a></BaseText>
+          <BaseText style={{ marginTop: 16 }}>Bugs or suggestions?</BaseText>
+          <BaseText>- Please create an issue on <a href='https://github.com/harmony-one/dot-country' target='_blank' rel='noreferrer'>GitHub</a></BaseText>
         </DescLeft>
         {!address && <Button onClick={connect} style={{ width: 'auto' }}>CONNECT METAMASK</Button>}
         {address &&

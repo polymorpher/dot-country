@@ -1,5 +1,15 @@
 const createKeccakHash = require('keccak')
 
+export const nameUtils = {
+  VALID_NAME: /[a-z0-9]+/,
+  isValidName: (name) => {
+    return nameUtils.VALID_NAME.test(name)
+  },
+  isReservedName: (name) => {
+    return nameUtils.isValidName(name) && name.length <= 2
+  }
+}
+
 export const utils = {
   hexView: (bytes) => {
     return bytes && Array.from(bytes).map(x => x.toString(16).padStart(2, '0')).join('')

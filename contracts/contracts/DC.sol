@@ -21,8 +21,7 @@ import "./IBaseRegistrar.sol";
 
  */
 contract DC is Pausable, Ownable {
-    uint256 public constant MIN_DURATION = 365 days;
-    uint256 public constant GRACE_PERIOD = 90 days;
+    uint256 public gracePeriod;
     uint256 public baseRentalPrice;
     address public revenueAccount;
     IRegistrarController public registrarController;
@@ -32,10 +31,12 @@ contract DC is Pausable, Ownable {
     bool public reverseRecord;
     uint32 public fuses;
     uint64 public wrapperExpiry;
+    bool public initialized;
 
     struct InitConfiguration {
         uint256 baseRentalPrice;
         uint256 duration;
+        uint256 gracePeriod;
 
         // 32-bytes block
         address revenueAccount;
@@ -73,6 +74,7 @@ contract DC is Pausable, Ownable {
     constructor(InitConfiguration memory _initConfig) {
         setBaseRentalPrice(_initConfig.baseRentalPrice);
         setDuration(_initConfig.duration);
+        setGracePeriod(_initConfig.gracePeriod);
 
         setRevenueAccount(_initConfig.revenueAccount);
         setWrapperExpiry(_initConfig.wrapperExpiry);
@@ -82,6 +84,27 @@ contract DC is Pausable, Ownable {
         setBaseRegistrar(_initConfig.baseRegistrar);
         setResolver(_initConfig.resolver);
         setReverseRecord(_initConfig.reverseRecord);
+    }
+
+    function initialize(string[] calldata _names, NameRecord[] calldata _records) external onlyOwner {
+        require(!initialized, "D1DC: already initialized");
+        require(_names.length == _records.length, "D1DC: unequal length");
+        for (uint256 i = 0; i < _records.length; i++) {
+            bytes32 key = keccak256(bytes(_names[i]));
+            nameRecords[key] = _records[i];
+            keys.push(key);
+            if (i >= 1 && bytes(nameRecords[key].prev).length == 0) {
+                nameRecords[key].prev = _names[i - 1];
+            }
+            if (i < _records.length - 1 && bytes(nameRecords[key].next).length == 0) {
+                nameRecords[key].next = _names[i + 1];
+            }
+        }
+        lastRented = _names[_names.length - 1];
+    }
+
+    function finishInitialization() external onlyOwner {
+        initialized = true;
     }
 
     // admin functions
@@ -103,8 +126,11 @@ contract DC is Pausable, Ownable {
     }
 
     function setDuration(uint256 _duration) public onlyOwner {
-        require (_duration >= MIN_DURATION, "duration less than minimum");
         duration = _duration;
+    }
+
+    function setGracePeriod(uint256 _gracePeriod) public onlyOwner {
+        gracePeriod = _gracePeriod;
     }
 
     function setResolver(address _resolver) public onlyOwner {
@@ -151,7 +177,7 @@ contract DC is Pausable, Ownable {
      */
     function available(string memory name) public view returns (bool) {
         NameRecord storage record = nameRecords[keccak256(bytes(name))];
-        return registrarController.available(name) && (record.renter == address(0) || uint256(record.expirationTime) + GRACE_PERIOD <= block.timestamp);
+        return registrarController.available(name) && (record.renter == address(0) || uint256(record.expirationTime) + gracePeriod <= block.timestamp);
     }
 
     /**
@@ -256,7 +282,7 @@ contract DC is Pausable, Ownable {
         require(bytes(url).length <= 1024, "DC: url too long");
         NameRecord storage nameRecord = nameRecords[keccak256(bytes(name))];
         require(nameRecord.renter != address(0), "DC: name is not rented");
-        require(nameRecord.expirationTime + GRACE_PERIOD >= block.timestamp, "DC: cannot renew after grace period" );
+        require(nameRecord.expirationTime + gracePeriod >= block.timestamp, "DC: cannot renew after grace period" );
         uint256 ensPrice = getENSPrice(name);
         uint256 price = baseRentalPrice + ensPrice;
         require(price <= msg.value, "DC: insufficient payment");
