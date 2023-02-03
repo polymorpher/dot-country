@@ -305,7 +305,7 @@ const Home = ({ subdomain = config.tld }) => {
       return toast.error('Invalid domain')
     }
     if (!nameUtils.isValidName(sld)) {
-      return toast.error('Must be alphanumerical characters')
+      return toast.error('Domain must be alphanumerical characters or hyphen (-)')
     }
     setPending(true)
     try {
@@ -372,6 +372,15 @@ const Home = ({ subdomain = config.tld }) => {
     }
     async function f () {
       try {
+        if (sld.length <= 2 && !nameUtils.RESTRICTED_VALID_NAME.test(sld.toLowerCase())) {
+          return toast.error('Short domain names (<2 characters) cannot have hyphen and must be alphanumerical')
+        }
+        if (sld.length <= 2 && nameUtils.SPECIAL_NAMES.test(sld.toLowerCase())) {
+          return toast.error('This domain name is reserved for special purpose')
+        }
+        if (!nameUtils.isValidName(sld.toLowerCase())) {
+          return toast.error('Domain must be alphanumerical characters or hyphen (-)')
+        }
         setCheckingAvailability(true)
         const { isAvailable } = await relayApi().checkDomain({ sld: sld.toLowerCase() })
         const isAvailableWeb3 = await client.checkAvailable({ name: sld.toLowerCase() })
