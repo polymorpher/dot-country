@@ -675,6 +675,11 @@
         "internalType": "bytes32",
         "name": "secret",
         "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
       }
     ],
     "name": "register",

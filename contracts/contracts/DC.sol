@@ -229,17 +229,17 @@ contract DC is Pausable, Ownable {
      * @param url A URL that can be embedded in a web2 default domain page e.g. a twitter post
      * @param secret A random secret passed by the client
      */
-    function register(string calldata name, string calldata url, bytes32 secret) public payable whenNotPaused {
+    function register(string calldata name, string calldata url, bytes32 secret, address to) public payable whenNotPaused {
         require(bytes(name).length <= 128, "DC: name too long");
         require(bytes(url).length <= 1024, "DC: url too long");
         uint256 price = getPrice(name);
         require(price <= msg.value, "DC: insufficient payment");
         require(available(name), "DC: name unavailable");
-        _register(name, msg.sender, secret);
+        _register(name, to, secret);
         // Update Name Record and send events
         uint256 tokenId = uint256(keccak256(bytes(name)));
         NameRecord storage nameRecord = nameRecords[bytes32(tokenId)];
-        nameRecord.renter = msg.sender;
+        nameRecord.renter = to;
         nameRecord.lastPrice = price;
         nameRecord.rentTime = block.timestamp;
         nameRecord.expirationTime = block.timestamp + duration;
@@ -247,7 +247,7 @@ contract DC is Pausable, Ownable {
             nameRecord.url = url;
         }
         _updateLinkedListWithNewName(nameRecord, name);
-        emit NameRented(name, msg.sender, price, url);
+        emit NameRented(name, to, price, url);
 
         // Return any excess funds
         uint256 excess = msg.value - price;
