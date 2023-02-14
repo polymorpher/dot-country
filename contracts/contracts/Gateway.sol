@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 pragma solidity ^0.8.17;
 
 interface ID1DC {
-    function getPrice(bytes32 encodedName) external view returns (uint256);
+    function getPrice(bytes32 encodedName, address dest) external view returns (uint256);
 
     function rent(string calldata name, string calldata url, address to) external payable;
 }
@@ -32,8 +32,8 @@ contract Gateway is Ownable {
         d1dc = _d1dc;
         dc = _dc;
     }
-    function getPrice(string memory name) public view returns (uint256) {
-        return d1dc.getPrice(keccak256(bytes(name))) + dc.getPrice(name);
+    function getPrice(string memory name, address to) public view returns (uint256) {
+        return d1dc.getPrice(keccak256(bytes(name)), to) + dc.getPrice(name);
     }
     function makeCommitment(string memory name, address owner, bytes32 secret)  external view returns (bytes32){
         return dc.makeCommitment(name,owner,secret);
@@ -42,7 +42,7 @@ contract Gateway is Ownable {
         return dc.commit(commitment);
     }
     function rent(string calldata name, string calldata url, bytes32 secret, address to) external payable {
-        uint256 price = getPrice(name);
+        uint256 price = getPrice(name, to);
         d1dc.rent(name, url, to);
         dc.register(name, url, secret, to);
         uint256 excess = msg.value - price;

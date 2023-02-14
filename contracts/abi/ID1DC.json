@@ -5,6 +5,11 @@
         "internalType": "bytes32",
         "name": "encodedName",
         "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "dest",
+        "type": "address"
       }
     ],
     "name": "getPrice",
