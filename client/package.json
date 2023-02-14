@@ -2,7 +2,7 @@
   "name": "dot-country-client",
   "version": "0.0.1",
   "private": true,
-  "license": "Apache-2.0",
+  "license": "CC-BY-NC-4.0",
   "scripts": {
     "debug": "DEBUG=1 webpack serve --mode=development",
     "local": "DEBUG=true webpack serve --mode=development",

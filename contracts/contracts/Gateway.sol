@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CC-BY-NC-4.0
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
