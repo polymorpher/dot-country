@@ -55,12 +55,13 @@ contract DC is Pausable, Ownable {
         uint256 rentTime;
         uint256 expirationTime;
         uint256 lastPrice;
-        string url;
+        string url; // this one should be pinned on top
         string prev;
         string next;
     }
 
     mapping(bytes32 => NameRecord) public nameRecords;
+    mapping(bytes32 => string[]) urlsPerRecord; // additional urls per record
     string public lastRented;
 
     bytes32[] public keys;
@@ -69,6 +70,9 @@ contract DC is Pausable, Ownable {
     event NameRenewed(string indexed name, address indexed renter, uint256 price, string url);
     event NameReinstated(string indexed name, address indexed renter, uint256 price, address oldRenter);
     event URLUpdated(string indexed name, address indexed renter, string oldUrl, string newUrl);
+    event URLAdded(string indexed name, address indexed renter, string url);
+    event URLRemoved(string indexed name, address indexed renter, string url, uint256 position);
+    event URLCleared(string indexed name, address indexed renter);
     event RevenueAccountChanged(address from, address to);
 
     constructor(InitConfiguration memory _initConfig) {
@@ -347,13 +351,47 @@ contract DC is Pausable, Ownable {
         }
     }
 
-    function updateURL(string calldata name, string calldata url) public payable whenNotPaused {
+    modifier recordOwnerOnly(string calldata name){
         NameRecord storage r = nameRecords[keccak256(bytes(name))];
         require(r.renter == msg.sender, "DC: not owner");
         require(r.expirationTime > block.timestamp, "DC: expired");
+        _;
+    }
+    function updateURL(string calldata name, string calldata url) public whenNotPaused recordOwnerOnly(name){
+        NameRecord storage r = nameRecords[keccak256(bytes(name))];
         require(bytes(url).length <= 1024, "DC: url too long");
         emit URLUpdated(name, msg.sender, nameRecords[keccak256(bytes(name))].url, url);
         nameRecords[keccak256(bytes(name))].url = url;
+    }
+
+    function addURL(string calldata name, string calldata url) public whenNotPaused recordOwnerOnly(name) {
+        bytes32 key = keccak256(bytes(name));
+        require(urlsPerRecord[key].length < 32, "DC: too many urls");
+        urlsPerRecord[key].push(url);
+        emit URLAdded(name, msg.sender, url);
+    }
+
+    function numUrls(string calldata name) public view returns(uint256) {
+        bytes32 key = keccak256(bytes(name));
+        return urlsPerRecord[key].length;
+    }
+
+    function removeUrl(string calldata name, uint256 pos) public whenNotPaused recordOwnerOnly(name) {
+        bytes32 key = keccak256(bytes(name));
+        require(pos < urlsPerRecord[key].length, "DC: invalid position");
+        string memory url = urlsPerRecord[key][pos];
+        // have to keep the order
+        for (uint256 i = pos; i < urlsPerRecord[key].length - 1; i++) {
+            urlsPerRecord[key][pos] = urlsPerRecord[key][pos + 1];
+        }
+        urlsPerRecord[key].pop();
+        emit URLRemoved(name, msg.sender, url, pos);
+    }
+
+    function clearUrls(string calldata name) public whenNotPaused recordOwnerOnly(name){
+        bytes32 key = keccak256(bytes(name));
+        delete urlsPerRecord[key];
+        emit URLCleared(name, msg.sender);
     }
 
     function withdraw() external {
