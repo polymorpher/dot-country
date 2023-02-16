@@ -394,6 +394,15 @@ contract DC is Pausable, Ownable {
         emit URLCleared(name, msg.sender);
     }
 
+    function getAllUrls(string calldata name) public returns (string[] memory){
+        bytes32 key = keccak256(bytes(name));
+        string[] memory ret = new string[](urlsPerRecord[key].length);
+        for (uint256 i = 0; i < urlsPerRecord[key].length; i++) {
+            ret[i] = urlsPerRecord[key][i];
+        }
+        return ret;
+    }
+
     function withdraw() external {
         require(msg.sender == owner() || msg.sender == revenueAccount, "DC: must be owner or revenue account");
         (bool success, ) = revenueAccount.call{value: address(this).balance}("");
