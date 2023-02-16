@@ -61,7 +61,7 @@ contract DC is Pausable, Ownable {
     }
 
     mapping(bytes32 => NameRecord) public nameRecords;
-    mapping(bytes32 => string[]) urlsPerRecord; // additional urls per record
+    mapping(bytes32 => string[]) public urlsPerRecord; // additional urls per record
     string public lastRented;
 
     bytes32[] public keys;
@@ -358,10 +358,10 @@ contract DC is Pausable, Ownable {
         _;
     }
     function updateURL(string calldata name, string calldata url) public whenNotPaused recordOwnerOnly(name){
-        NameRecord storage r = nameRecords[keccak256(bytes(name))];
+        bytes32 key = keccak256(bytes(name));
         require(bytes(url).length <= 1024, "DC: url too long");
-        emit URLUpdated(name, msg.sender, nameRecords[keccak256(bytes(name))].url, url);
-        nameRecords[keccak256(bytes(name))].url = url;
+        emit URLUpdated(name, msg.sender, nameRecords[key].url, url);
+        nameRecords[key].url = url;
     }
 
     function addURL(string calldata name, string calldata url) public whenNotPaused recordOwnerOnly(name) {
