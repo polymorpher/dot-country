@@ -22,9 +22,9 @@ EAS is activated in a smart contract separate from dot-country (DC). The activat
 
 1. the SLD (second-level domain) name (e.g., `fscoiety`)
 2. the alias to receive email under the user's .country domain, defaults to be `hello` (the initial version will only support a single alias)
-3. the commitment hash computed by `keccak256(bytes.concat(alias,forwardAddress,signature))`, where:
+3. the commitment hash computed by `keccak256(bytes.concat(alias,"|",forwardAddress,"|",signature))`, where:
    - `forwardAddress` is the destination email address (e.g., `mr.robot@gmail.com`), and 
-   - `signature` is the EIP-197 signature produced by the user over a user-friendly message that includes the forwardAddress (e.g., `You are about to authorize forwarding all emails from hello@fsociety.country to mr.robot@gmail.com`)
+   - `signature` is the EIP-192 signature produced by the user over a user-friendly message that includes the forwardAddress (e.g., `You are about to authorize forwarding all emails from hello@fsociety.country to mr.robot@gmail.com`)
 
 The smart contract will verify that the user's address indeed owns the domain name under the DC contract, and if so, store the mapping entry of (domain name) -> (alias, commitment hash). EAS can be marked for deactivation by the user at any time. In the initial version, deactivation alone on the smart contract is insufficient to deactivate the service. The EAS server must be notified to complete the deactivation.
 
