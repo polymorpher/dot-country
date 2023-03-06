@@ -16,6 +16,8 @@
         "compile": "npx hardhat compile",
         "coverage": "npx hardhat coverage",
         "deploy": "npx hardhat deploy",
+        "deploy-dc": "npx hardhat deploy --network local --tags DC",
+        "deploy-tweet": "npx hardhat deploy --network local --tags DC,Tweet",
         "gas": "REPORT_GAS=true npx hardhat test",
         "test": "npx hardhat test",
         "sdoc": "cd ./scripts && ./sdoc.sh"

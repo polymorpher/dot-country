@@ -4,26 +4,6 @@
       {
         "components": [
           {
-            "internalType": "uint256",
-            "name": "baseRentalPrice",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "duration",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "gracePeriod",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "revenueAccount",
-            "type": "address"
-          },
-          {
             "internalType": "uint64",
             "name": "wrapperExpiry",
             "type": "uint64"
@@ -36,6 +16,11 @@
           {
             "internalType": "address",
             "name": "registrarController",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "nameWrapper",
             "type": "address"
           },
           {
@@ -193,155 +178,12 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      }
-    ],
-    "name": "RevenueAccountChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "renter",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
-      }
-    ],
-    "name": "URLAdded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "renter",
-        "type": "address"
-      }
-    ],
-    "name": "URLCleared",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "renter",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "position",
-        "type": "uint256"
-      }
-    ],
-    "name": "URLRemoved",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "renter",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "oldUrl",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "newUrl",
-        "type": "string"
-      }
-    ],
-    "name": "URLUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
         "name": "account",
         "type": "address"
       }
     ],
     "name": "Unpaused",
     "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
-      }
-    ],
-    "name": "addURL",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   },
   {
     "inputs": [
@@ -376,32 +218,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "baseRentalPrice",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      }
-    ],
-    "name": "clearUrls",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "bytes32",
@@ -410,26 +226,6 @@
       }
     ],
     "name": "commit",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "duration",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "finishInitialization",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -453,25 +249,11 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
-      }
-    ],
-    "name": "getAllUrls",
-    "outputs": [
+      },
       {
-        "internalType": "string[]",
-        "name": "",
-        "type": "string[]"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "duration",
+        "type": "uint256"
       }
     ],
     "name": "getENSPrice",
@@ -483,136 +265,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      }
-    ],
-    "name": "getPrice",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "start",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "end",
-        "type": "uint256"
-      }
-    ],
-    "name": "getRecordKeys",
-    "outputs": [
-      {
-        "internalType": "bytes32[]",
-        "name": "",
-        "type": "bytes32[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      }
-    ],
-    "name": "getReinstateCost",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "gracePeriod",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string[]",
-        "name": "_names",
-        "type": "string[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "renter",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "rentTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "expirationTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "lastPrice",
-            "type": "uint256"
-          },
-          {
-            "internalType": "string",
-            "name": "url",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "prev",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "next",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct DC.NameRecord[]",
-        "name": "_records",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "initialize",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -631,38 +283,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "keys",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "lastRented",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "string",
         "name": "name",
         "type": "string"
@@ -671,6 +291,11 @@
         "internalType": "address",
         "name": "owner",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "duration",
+        "type": "uint256"
       },
       {
         "internalType": "bytes32",
@@ -692,47 +317,17 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
       }
     ],
-    "name": "nameRecords",
+    "name": "nameExpires",
     "outputs": [
       {
-        "internalType": "address",
-        "name": "renter",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
-        "name": "rentTime",
+        "name": "",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "expirationTime",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "lastPrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "prev",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "next",
-        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -740,12 +335,25 @@
   },
   {
     "inputs": [],
-    "name": "numRecords",
+    "name": "nameWrapper",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "contract INameWrapper",
         "name": "",
-        "type": "uint256"
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -759,20 +367,7 @@
         "type": "string"
       }
     ],
-    "name": "numUrls",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
+    "name": "ownerOf",
     "outputs": [
       {
         "internalType": "address",
@@ -811,9 +406,14 @@
         "type": "string"
       },
       {
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "duration",
+        "type": "uint256"
       },
       {
         "internalType": "bytes32",
@@ -845,42 +445,11 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
-      }
-    ],
-    "name": "reinstate",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
       },
       {
         "internalType": "uint256",
-        "name": "pos",
+        "name": "duration",
         "type": "uint256"
-      }
-    ],
-    "name": "removeUrl",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
       }
     ],
     "name": "renew",
@@ -898,19 +467,6 @@
   {
     "inputs": [],
     "name": "resolver",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "revenueAccount",
     "outputs": [
       {
         "internalType": "address",
@@ -950,32 +506,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_baseRentalPrice",
-        "type": "uint256"
-      }
-    ],
-    "name": "setBaseRentalPrice",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_duration",
-        "type": "uint256"
-      }
-    ],
-    "name": "setDuration",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint32",
         "name": "_fuses",
         "type": "uint32"
@@ -989,12 +519,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_gracePeriod",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "_nameWrapper",
+        "type": "address"
       }
     ],
-    "name": "setGracePeriod",
+    "name": "setNameWrapper",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1021,19 +551,6 @@
       }
     ],
     "name": "setResolver",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_revenueAccount",
-        "type": "address"
-      }
-    ],
-    "name": "setRevenueAccount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1092,45 +609,20 @@
         "type": "string"
       },
       {
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
       }
     ],
-    "name": "updateURL",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "urlsPerRecord",
+    "name": "verifyOnwer",
     "outputs": [
       {
-        "internalType": "string",
+        "internalType": "bool",
         "name": "",
-        "type": "string"
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

@@ -12,16 +12,14 @@ import config from '../config'
 
 const maxWrapperExpiry = ethers.BigNumber.from(new Uint8Array(8).fill(255)).toString()
 const initConfiguration = {
-  baseRentalPrice: ethers.utils.parseEther(config.baseRentalPrice),
-  duration: config.duration * 3600 * 24,
-  gracePeriod: config.gracePeriod * 3600 * 24,
-  revenueAccount: config.revenueAccount,
   wrapperExpiry: maxWrapperExpiry,
   fuses: config.fuses,
   registrarController: config.registrarController,
+  nameWrapper: config.nameWrapper,
   baseRegistrar: config.registrar,
   resolver: config.resolver,
   reverseRecord: config.reverseRecord
+
 }
 console.log(`initConfiguration: ${JSON.stringify(initConfiguration)}`)
 
