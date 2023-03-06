@@ -33,16 +33,17 @@ contract DC is Pausable, Ownable {
 
     struct InitConfiguration {
 
-        // 12-bytes block
+        // 32-bytes block
         uint64 wrapperExpiry;
         uint32 fuses;
-
-        // 81-bytes
         address registrarController;
+        // 21-bytes
         address nameWrapper;
-        address baseRegistrar;
-        address resolver;
         bool reverseRecord;
+        // 20-bytes
+        address baseRegistrar;
+        // 20-bytes
+        address resolver;
     }
 
     event NameRented(string indexed name, address indexed renter, uint256 price, string url);
