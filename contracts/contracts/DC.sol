@@ -192,6 +192,12 @@ contract DC is Pausable, Ownable {
     function ownerOf(string calldata name) public view returns(address) {
         bytes32 node = keccak256(bytes(name));
         uint256 tokenId = uint256(node);
-        return nameWrapper.ownerOf(tokenId);
+        address baseOwner = baseRegistrar.ownerOf(tokenId);
+        if(baseOwner != nameWrapper){
+            return baseOwner;
+        }
+        bytes32 tn = nameWrapper.TLD_NODE();
+        bytes32 nh = keccak256(bytes.concat(tn, node));
+        return nameWrapper.ownerOf(nh);
     }
 }
