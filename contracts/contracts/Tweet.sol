@@ -93,7 +93,7 @@ contract Tweet is Pausable, Ownable {
         // Return any excess funds
         uint256 excess = msg.value - baseRentalPrice;
         if (excess > 0) {
-            (bool success, ) = msg.sender.call{value: excess}("");
+            (bool success,) = msg.sender.call{value : excess}("");
             require(success, "cannot refund excess");
         }
     }
@@ -112,7 +112,7 @@ contract Tweet is Pausable, Ownable {
         emit URLAdded(name, msg.sender, url);
     }
 
-    function numUrls(string calldata name) public view returns(uint256) {
+    function numUrls(string calldata name) public view returns (uint256) {
         bytes32 key = keccak256(bytes(name));
         return urls[key].length;
     }
@@ -129,7 +129,7 @@ contract Tweet is Pausable, Ownable {
         emit URLRemoved(name, msg.sender, url, pos);
     }
 
-    function clearUrls(string calldata name) public whenNotPaused recordOwnerOnly(name){
+    function clearUrls(string calldata name) public whenNotPaused recordOwnerOnly(name) {
         bytes32 key = keccak256(bytes(name));
         delete urls[key];
         emit URLCleared(name, msg.sender);
@@ -146,7 +146,7 @@ contract Tweet is Pausable, Ownable {
 
     function withdraw() external {
         require(msg.sender == owner() || msg.sender == revenueAccount, "DC: must be owner or revenue account");
-        (bool success, ) = revenueAccount.call{value: address(this).balance}("");
+        (bool success,) = revenueAccount.call{value : address(this).balance}("");
         require(success, "DC: failed to withdraw");
     }
 }
