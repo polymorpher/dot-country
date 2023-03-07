@@ -79,7 +79,7 @@ const config: HardhatUserConfig = {
     flat: true,
     spacing: 2,
     format: 'json',
-    only: ['DC']
+    only: ['DC', 'Tweet', 'LazyBundler']
   },
   spdxLicenseIdentifier: {
     overwrite: true,
