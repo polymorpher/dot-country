@@ -150,7 +150,7 @@ contract DC is Pausable, Ownable {
         // Return any excess funds
         uint256 excess = msg.value - price;
         if (excess > 0) {
-            (bool success, ) = msg.sender.call{value: excess}("");
+            (bool success,) = msg.sender.call{value : excess}("");
             require(success, "DC: cannot refund excess");
         }
     }
@@ -165,7 +165,7 @@ contract DC is Pausable, Ownable {
     function _register(string calldata name, address owner, bytes32 secret) internal whenNotPaused {
         uint256 ensPrice = getPrice(name);
         bytes[] memory emptyData;
-        registrarController.register{value: ensPrice}(name, owner, duration, secret, resolver, emptyData, reverseRecord, fuses, wrapperExpiry);
+        registrarController.register{value : ensPrice}(name, owner, duration, secret, resolver, emptyData, reverseRecord, fuses, wrapperExpiry);
     }
 
     /**
@@ -175,25 +175,25 @@ contract DC is Pausable, Ownable {
     function renew(string calldata name) public payable whenNotPaused {
         uint256 price = getPrice(name);
         require(price <= msg.value, "DC: insufficient payment");
-        registrarController.renew{value: price}(name);
+        registrarController.renew{value : price}(name);
         uint256 excess = msg.value - price;
         if (excess > 0) {
-            (bool success, ) = msg.sender.call{value: excess}("");
+            (bool success,) = msg.sender.call{value : excess}("");
             require(success, "cannot refund excess");
         }
     }
 
-    function nameExpires(string calldata name) public view returns(uint256) {
+    function nameExpires(string calldata name) public view returns (uint256) {
         bytes32 node = keccak256(bytes(name));
         uint256 tokenId = uint256(node);
         return baseRegistrar.nameExpires(tokenId);
     }
 
-    function ownerOf(string calldata name) public view returns(address) {
+    function ownerOf(string calldata name) public view returns (address) {
         bytes32 node = keccak256(bytes(name));
         uint256 tokenId = uint256(node);
         address baseOwner = baseRegistrar.ownerOf(tokenId);
-        if(baseOwner != nameWrapper){
+        if (baseOwner != nameWrapper) {
             return baseOwner;
         }
         bytes32 tn = nameWrapper.TLD_NODE();
