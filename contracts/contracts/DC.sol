@@ -174,7 +174,7 @@ contract DC is Pausable, Ownable {
     function renew(string calldata name) public payable whenNotPaused {
         uint256 price = getPrice(name);
         require(price <= msg.value, "DC: insufficient payment");
-        registrarController.renew{value : price}(name);
+        registrarController.renew{value : price}(name, duration);
         uint256 excess = msg.value - price;
         if (excess > 0) {
             (bool success,) = msg.sender.call{value : excess}("");
@@ -192,11 +192,11 @@ contract DC is Pausable, Ownable {
         bytes32 node = keccak256(bytes(name));
         uint256 tokenId = uint256(node);
         address baseOwner = baseRegistrar.ownerOf(tokenId);
-        if (baseOwner != nameWrapper) {
+        if (baseOwner != address(nameWrapper)) {
             return baseOwner;
         }
         bytes32 tn = nameWrapper.TLD_NODE();
         bytes32 nh = keccak256(bytes.concat(tn, node));
-        return nameWrapper.ownerOf(nh);
+        return nameWrapper.ownerOf(uint256(nh));
     }
 }

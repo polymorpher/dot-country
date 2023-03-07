@@ -13,6 +13,7 @@ contract Tweet is Pausable, Ownable {
     uint256 public baseRentalPrice;
     address public revenueAccount;
     IDC public dc;
+    bool public initialized;
 
     struct InitConfiguration {
         uint256 baseRentalPrice;
@@ -40,11 +41,11 @@ contract Tweet is Pausable, Ownable {
         require(!initialized, "Tweet: already initialized");
         for (uint256 i = 0; i < _names.length; i++) {
             bytes32 key = keccak256(bytes(_names[i]));
-            records[key] = true;
+            activated[key] = true;
         }
     }
 
-    function initializeUrls(string _name, string[] memory _urls) external onlyOwner {
+    function initializeUrls(string calldata _name, string[] memory _urls) external onlyOwner {
         require(!initialized, "Tweet: already initialized");
         bytes32 key = keccak256(bytes(_name));
         for (uint256 i = 0; i < _urls.length; i++) {
@@ -86,8 +87,8 @@ contract Tweet is Pausable, Ownable {
     function activate(string calldata name) public payable whenNotPaused onlyRegistered(name) {
         require(baseRentalPrice <= msg.value, "Tweet: insufficient payment");
         uint256 tokenId = uint256(keccak256(bytes(name)));
-        require(!records[bytes32(tokenId)], "Tweet: already activated");
-        records[bytes32(tokenId)] = true;
+        require(!activated[bytes32(tokenId)], "Tweet: already activated");
+        activated[bytes32(tokenId)] = true;
         emit TweetActivated(name);
 
         // Return any excess funds

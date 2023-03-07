@@ -37,6 +37,11 @@
             "internalType": "bool",
             "name": "reverseRecord",
             "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "duration",
+            "type": "uint256"
           }
         ],
         "internalType": "struct DC.InitConfiguration",
@@ -67,43 +72,6 @@
         "internalType": "uint256",
         "name": "price",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "oldRenter",
-        "type": "address"
-      }
-    ],
-    "name": "NameReinstated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "renter",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "price",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
       }
     ],
     "name": "NameRenewed",
@@ -129,12 +97,6 @@
         "internalType": "uint256",
         "name": "price",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "url",
-        "type": "string"
       }
     ],
     "name": "NameRented",
@@ -232,6 +194,19 @@
   },
   {
     "inputs": [],
+    "name": "duration",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "fuses",
     "outputs": [
       {
@@ -249,32 +224,14 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "duration",
-        "type": "uint256"
       }
     ],
-    "name": "getENSPrice",
+    "name": "getPrice",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "initialized",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -291,11 +248,6 @@
         "internalType": "address",
         "name": "owner",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "duration",
-        "type": "uint256"
       },
       {
         "internalType": "bytes32",
@@ -411,11 +363,6 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "duration",
-        "type": "uint256"
-      },
-      {
         "internalType": "bytes32",
         "name": "secret",
         "type": "bytes32"
@@ -445,11 +392,6 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "duration",
-        "type": "uint256"
       }
     ],
     "name": "renew",
@@ -499,6 +441,19 @@
       }
     ],
     "name": "setBaseRegistrar",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_duration",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDuration",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -602,30 +557,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "verifyOnwer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "wrapperExpiry",
     "outputs": [
@@ -637,9 +568,5 @@
     ],
     "stateMutability": "view",
     "type": "function"
-  },
-  {
-    "stateMutability": "payable",
-    "type": "receive"
   }
 ]
