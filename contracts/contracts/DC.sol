@@ -12,14 +12,8 @@ import "./IBaseRegistrar.sol";
 /**
     @title A domain manager contract for .country (DC -  Dot Country)
     @author John Whitton (github.com/johnwhitton), reviewed and revised by Aaron Li (github.com/polymorpher)
-    @notice This contract allows the rental of domains under .country (”DC”)
-    it integrates with the ENSRegistrarController and the ENS system as a whole for persisting of domain registrations.
-    The calling services are responsible for holding the revenue from these registrations for the web2 portion of the 
-    registration process, with the web3 registration revenue being held by the RegistrarController contract.
-    An example would be as follows Alice registers alice.com this calls the service register function with an amount of 10,000 ONE.
-    5000 ONE would be held by the service contract and the remaining 5000 funds would be sent to the RegistrarController 
-    via this contract using the register function.
-
+    @notice This contract simplifies the rental of domains under .country (”DC”), and serves as an entry point for other services to check ownership and expiration over a domain. Under the hood, the contract works with a customized ENS system deployed by https://github.com/harmony-one/ens-deployer
+    Services may charge users for activation and keep their own revenue. Funds received by registration are sent to RegistrarController contract and held there.
  */
 contract DC is Pausable, Ownable {
     IRegistrarController public registrarController;
@@ -29,32 +23,30 @@ contract DC is Pausable, Ownable {
     bool public reverseRecord;
     uint32 public fuses;
     uint64 public wrapperExpiry;
-    bool public initialized;
+    uint256 public duration;
 
     struct InitConfiguration {
-
-        // 32-bytes block
+        // 32-bytes
         uint64 wrapperExpiry;
         uint32 fuses;
         address registrarController;
-        // 21-bytes
+        // 61-bytes
         address nameWrapper;
-        bool reverseRecord;
-        // 20-bytes
         address baseRegistrar;
-        // 20-bytes
         address resolver;
+        bool reverseRecord;
+
+        uint256 duration;
     }
 
-    event NameRented(string indexed name, address indexed renter, uint256 price, string url);
-    event NameRenewed(string indexed name, address indexed renter, uint256 price, string url);
-    event NameReinstated(string indexed name, address indexed renter, uint256 price, address oldRenter);
+    event NameRented(string indexed name, address indexed renter, uint256 price);
+    event NameRenewed(string indexed name, address indexed renter, uint256 price);
 
     constructor(InitConfiguration memory _initConfig) {
         // setBaseRentalPrice(_initConfig.baseRentalPrice);
         setWrapperExpiry(_initConfig.wrapperExpiry);
         setFuses(_initConfig.fuses);
-
+        setDuration(_initConfig.duration);
         setRegistrarController(_initConfig.registrarController);
         setNameWrapper(_initConfig.nameWrapper);
         setBaseRegistrar(_initConfig.baseRegistrar);
@@ -90,6 +82,10 @@ contract DC is Pausable, Ownable {
         wrapperExpiry = _wrapperExpiry;
     }
 
+    function setDuration(uint256 _duration) public onlyOwner {
+        duration = _duration;
+    }
+
     function pause() external onlyOwner {
         _pause();
     }
@@ -103,8 +99,6 @@ contract DC is Pausable, Ownable {
      * @param name The name to be checked being registered
      */
     function available(string memory name) public view returns (bool) {
-        // NameRecord storage record = nameRecords[keccak256(bytes(name))];
-        // return registrarController.available(name) && (record.renter == address(0) || uint256(record.expirationTime) + gracePeriod <= block.timestamp);
         return registrarController.available(name);
     }
 
@@ -115,7 +109,7 @@ contract DC is Pausable, Ownable {
      * @param owner The address of the owner of the name being registered
      * @param secret A random secret passed by the client
      */
-    function makeCommitment(string memory name, address owner, uint256 duration, bytes32 secret) public view returns (bytes32) {
+    function makeCommitment(string memory name, address owner, bytes32 secret) public view returns (bytes32) {
         bytes[] memory data;
         return registrarController.makeCommitment(name, owner, duration, secret, resolver, data, reverseRecord, fuses, wrapperExpiry);
     }
@@ -133,7 +127,7 @@ contract DC is Pausable, Ownable {
      * tRegistrarController.rentPrice (price.base + price.premium)
      * @param name The name being registered
      */
-    function getENSPrice(string memory name, uint256 duration) public view returns (uint256) {
+    function getPrice(string memory name) public view returns (uint256) {
         IRegistrarController.Price memory price = registrarController.rentPrice(name, duration);
         return price.base + price.premium;
     }
@@ -146,18 +140,18 @@ contract DC is Pausable, Ownable {
      * @param duration Length of time to register the name
      * @param secret A random secret passed by the client
      */
-    function register(string calldata name, address owner, uint256 duration, bytes32 secret) public payable whenNotPaused {
+    function register(string calldata name, address owner, bytes32 secret) public payable whenNotPaused {
         require(bytes(name).length <= 128, "DC: name too long");
-        uint256 price = getENSPrice(name, duration);
+        uint256 price = getPrice(name);
         require(price <= msg.value, "DC: insufficient payment");
         require(available(name), "DC: name unavailable");
-        _register(name, owner, duration, secret);
+        _register(name, owner, secret);
 
         // Return any excess funds
         uint256 excess = msg.value - price;
         if (excess > 0) {
             (bool success, ) = msg.sender.call{value: excess}("");
-            require(success, "cannot refund excess");
+            require(success, "DC: cannot refund excess");
         }
     }
 
@@ -166,11 +160,10 @@ contract DC is Pausable, Ownable {
      * it is passed a value to cover the costs of the ens registration
      * @param name The name to be registered e.g. for test.country it would be test
      * @param owner The owner address of the name to be registered
-     * @param duration Length of time to register the name
      * @param secret A random secret passed by the client
      */
-    function _register(string calldata name, address owner, uint256 duration, bytes32 secret) internal whenNotPaused {
-        uint256 ensPrice = getENSPrice(name, duration);
+    function _register(string calldata name, address owner, bytes32 secret) internal whenNotPaused {
+        uint256 ensPrice = getPrice(name);
         bytes[] memory emptyData;
         registrarController.register{value: ensPrice}(name, owner, duration, secret, resolver, emptyData, reverseRecord, fuses, wrapperExpiry);
     }
@@ -178,24 +171,16 @@ contract DC is Pausable, Ownable {
     /**
      * @dev `renew` calls RegistrarController renew and is used to renew a name
      * @param name The name to be registered e.g. for test.country it would be test
-     * @param duration Length of time to register the name
      */
-    function renew(string calldata name, uint256 duration) public payable whenNotPaused {
-        uint256 price = getENSPrice(name, duration);
+    function renew(string calldata name) public payable whenNotPaused {
+        uint256 price = getPrice(name);
         require(price <= msg.value, "DC: insufficient payment");
-        registrarController.renew{value: price}(name, duration);
+        registrarController.renew{value: price}(name);
         uint256 excess = msg.value - price;
         if (excess > 0) {
             (bool success, ) = msg.sender.call{value: excess}("");
             require(success, "cannot refund excess");
         }
-    }
-
-    function verifyOnwer(string calldata name, address owner) public view returns(bool) {
-        bytes32 node = keccak256(bytes(name));
-        uint256 tokenId = uint256(node);
-        address currentOwner = nameWrapper.ownerOf(tokenId);
-        return owner == currentOwner; 
     }
 
     function nameExpires(string calldata name) public view returns(uint256) {
@@ -208,16 +193,5 @@ contract DC is Pausable, Ownable {
         bytes32 node = keccak256(bytes(name));
         uint256 tokenId = uint256(node);
         return nameWrapper.ownerOf(tokenId);
-    }
-
-    modifier recordOwnerOnly(string calldata name){
-        bytes32 node = keccak256(bytes(name));
-        uint256 tokenId = uint256(node);
-        require(nameWrapper.ownerOf(tokenId) == msg.sender, "DC: not nameWrapperowner");
-        _;
-    }
-
-    receive() external payable{
-
     }
 }
