@@ -6,42 +6,37 @@ import { DC } from '../typechain-types'
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
   const { deploy } = deployments
-
   const { deployer } = await getNamedAccounts()
-
-  const maxWrapperExpiry = ethers.BigNumber.from(new Uint8Array(8).fill(255)).toString()
   const initConfiguration = {
-    wrapperExpiry: maxWrapperExpiry,
+    wrapperExpiry: ethers.BigNumber.from(new Uint8Array(8).fill(255)).toString(),
     fuses: config.fuses,
-
     registrarController: config.registrarController,
     nameWrapper: config.nameWrapper,
     baseRegistrar: config.registrar,
     resolver: config.resolver,
-    reverseRecord: config.reverseRecord
+    reverseRecord: config.reverseRecord,
+    duration: config.duration
   }
-  console.log(`DC initial Configuration: ${JSON.stringify(initConfiguration, null, 2)}`)
+  console.log('DC initial config', initConfiguration)
 
   const DC = await deploy('DC', {
     from: deployer,
     args: [initConfiguration],
     log: true,
-    autoMine: true // speed up deployment on local network (ganache, hardhat), no effect on live networks
+    autoMine: true
   })
   console.log('DC address:', DC.address)
   const dc = await ethers.getContractAt('DC', DC.address) as DC
-
   const readConfiguration = {
     wrapperExpiry: (await dc.wrapperExpiry()).toString(),
     fuses: await dc.fuses(),
-
     registrarController: await dc.registrarController(),
     baseRegistrar: await dc.baseRegistrar(),
     resolver: await dc.resolver(),
     reverseRecord: await dc.reverseRecord(),
-    initialized: await dc.initialized()
+    duration: await dc.duration()
   }
-  console.log(`DC Read Configuration: ${JSON.stringify(readConfiguration, null, 2)}`)
+  console.log(`DC Read Configuration:\n${JSON.stringify(readConfiguration, null, 2)}`)
 }
 export default func
 func.tags = ['DC']
