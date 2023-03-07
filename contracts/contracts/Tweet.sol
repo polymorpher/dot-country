@@ -37,17 +37,15 @@ contract Tweet is Pausable, Ownable {
         setDC(_initConfig.dc);
     }
 
-    function initializeActivation(string[] calldata _names) external onlyOwner {
+    function initializeActivation(bytes32[] calldata keys) external onlyOwner {
         require(!initialized, "Tweet: already initialized");
-        for (uint256 i = 0; i < _names.length; i++) {
-            bytes32 key = keccak256(bytes(_names[i]));
-            activated[key] = true;
+        for (uint256 i = 0; i < keys.length; i++) {
+            activated[keys[i]] = true;
         }
     }
 
-    function initializeUrls(string calldata _name, string[] memory _urls) external onlyOwner {
+    function initializeUrls(bytes32 key, string[] memory _urls) external onlyOwner {
         require(!initialized, "Tweet: already initialized");
-        bytes32 key = keccak256(bytes(_name));
         for (uint256 i = 0; i < _urls.length; i++) {
             urls[key].push(_urls[i]);
         }

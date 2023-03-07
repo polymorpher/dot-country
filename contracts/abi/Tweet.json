@@ -328,9 +328,9 @@
   {
     "inputs": [
       {
-        "internalType": "string[]",
-        "name": "_names",
-        "type": "string[]"
+        "internalType": "bytes32[]",
+        "name": "keys",
+        "type": "bytes32[]"
       }
     ],
     "name": "initializeActivation",
@@ -341,9 +341,9 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "_name",
-        "type": "string"
+        "internalType": "bytes32",
+        "name": "key",
+        "type": "bytes32"
       },
       {
         "internalType": "string[]",
