@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CC-BY-NC-4.0
 
 pragma solidity ^0.8.17;
 
@@ -129,7 +129,7 @@ contract Tweet is Pausable, Ownable {
         emit URLRemoved(name, msg.sender, url, pos);
     }
 
-    function clearUrls(string calldata name) public whenNotPaused recordOwnerOnly(name) {
+    function clearUrls(string calldata name) public whenNotPaused activeOwnerOnly(name) {
         bytes32 key = keccak256(bytes(name));
         delete urls[key];
         emit URLCleared(name, msg.sender);

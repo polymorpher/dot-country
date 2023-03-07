@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CC-BY-NC-4.0
 
 pragma solidity ^0.8.17;
 
@@ -115,7 +115,7 @@ contract DC is Pausable, Ownable {
     }
 
     /**
-     * @dev `commitment` calls RegistrarController commitment and is used as a locker to ensure that only one registration for a name occurs
+     * @dev reserve a domain (one-way) corresponding to commitment value
      * @param commitment The commitment calculated by makeCommitment
      */
     function commit(bytes32 commitment) public {
@@ -123,7 +123,7 @@ contract DC is Pausable, Ownable {
     }
 
     /**
-     * @dev `getENSPrice` gets the price needed to be paid to ENS which calculated as
+     * @dev get the price for the domain from ENS
      * tRegistrarController.rentPrice (price.base + price.premium)
      * @param name The name being registered
      */
@@ -133,11 +133,10 @@ contract DC is Pausable, Ownable {
     }
 
     /**
-     * @dev `register` calls RegistrarController register and is used to register a name
+     * @dev use RegistrarController to register a name
      * this also takes a fee for the web2 registration which is held by DC.sol a check is made to ensure the value sent is sufficient for both fees
      * @param name The name to be registered e.g. for test.country it would be test
-     # @param owner The owner of the registerd name
-     * @param duration Length of time to register the name
+     # @param owner The owner of the registered name
      * @param secret A random secret passed by the client
      */
     function register(string calldata name, address owner, bytes32 secret) public payable whenNotPaused {
