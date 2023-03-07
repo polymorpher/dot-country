@@ -2,7 +2,7 @@
     "name": "dot-country-contracts",
     "version": "0.0.1",
     "description": "Contracts for dot-country",
-    "license": "MIT",
+    "license": "CC-BY-NC-4.0",
     "files": [
         "artifacts",
         "contracts",
