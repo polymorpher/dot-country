@@ -15,7 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     baseRegistrar: config.registrar,
     resolver: config.resolver,
     reverseRecord: config.reverseRecord,
-    duration: config.duration
+    duration: config.duration * 3600 * 24
   }
   console.log('DC initial config', initConfiguration)
 
@@ -34,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     baseRegistrar: await dc.baseRegistrar(),
     resolver: await dc.resolver(),
     reverseRecord: await dc.reverseRecord(),
-    duration: await dc.duration()
+    duration: (await dc.duration()).toNumber()
   }
   console.log(`DC Read Configuration:\n${JSON.stringify(readConfiguration, null, 2)}`)
 }
