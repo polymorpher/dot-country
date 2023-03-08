@@ -1,0 +1,25 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "dests",
+        "type": "address[]"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "data",
+        "type": "bytes[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "multicall",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]

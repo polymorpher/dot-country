@@ -2,7 +2,7 @@
     "name": "dot-country-contracts",
     "version": "0.0.1",
     "description": "Contracts for dot-country",
-    "license": "MIT",
+    "license": "CC-BY-NC-4.0",
     "files": [
         "artifacts",
         "contracts",
@@ -15,14 +15,15 @@
         "check": "npx hardhat check",
         "compile": "npx hardhat compile",
         "coverage": "npx hardhat coverage",
-        "deploy": "npx hardhat deploy",
+        "deploy-dc": "npx hardhat deploy --network local --tags DC",
+        "deploy-tweet": "npx hardhat deploy --network local --tags Tweet",
         "gas": "REPORT_GAS=true npx hardhat test",
         "test": "npx hardhat test",
         "sdoc": "cd ./scripts && ./sdoc.sh"
     },
     "devDependencies": {
         "@atixlabs/hardhat-time-n-mine": "^0.0.5",
-        "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
+        "@nomiclabs/hardhat-ethers": "yarn:hardhat-deploy-ethers",
         "@nomiclabs/hardhat-etherscan": "^3.0.3",
         "@nomiclabs/hardhat-waffle": "^2.0.3",
         "@openzeppelin/hardhat-upgrades": "^1.17.0",

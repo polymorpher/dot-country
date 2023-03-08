@@ -12,15 +12,16 @@ import config from '../config'
 
 const maxWrapperExpiry = ethers.BigNumber.from(new Uint8Array(8).fill(255)).toString()
 const initConfiguration = {
-  baseRentalPrice: ethers.utils.parseEther(config.baseRentalPrice),
-  revenueAccount: config.revenueAccount,
-  registrarController: config.registrarController,
-  duration: config.duration * 3600 * 24,
-  resolver: config.resolver,
-  reverseRecord: config.reverseRecord,
+  wrapperExpiry: maxWrapperExpiry,
   fuses: config.fuses,
-  wrapperExpiry: maxWrapperExpiry
+  registrarController: config.registrarController,
+  nameWrapper: config.nameWrapper,
+  baseRegistrar: config.registrar,
+  resolver: config.resolver,
+  reverseRecord: config.reverseRecord
+
 }
+console.log(`initConfiguration: ${JSON.stringify(initConfiguration)}`)
 
 describe('DC', function () {
   it('Should be deployed', async function () {

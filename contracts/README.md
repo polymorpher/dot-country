@@ -7,3 +7,5 @@ DC contracts have compatible NameRecord structures from [D1DC (.1.country)](http
 3. The DC contract's companion frontend (in `/client` folder) is meant to be used together so the user can rent a web3 and web2 domain simutaneously. 
 
 In other words, the DC contract is meant to provide some "extra service" on top of ENS contracts. Therefore, it charges some additional fees on top of purchasing an ENS domain from the ENS app. On a product level, the main value is to host and configure data that is also viewable in web2. The initial product only allows the renter to embed a tweet on their new domain, but more functionalities are coming soon
+
+

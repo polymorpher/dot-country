@@ -1,0 +1,6 @@
+## March 8rd, 2023 - TODOs
+
+1. Implement an admin batch minting (initialization/registration) function in BaseRegistrarImplementation that can be only called once, similar to [https://github.com/harmony-one/dot-country/blob/eee6967b4a51589da0d6d22dbde61b8a928ee3e8/contracts/contracts/DC.sol#L93](https://github.com/harmony-one/dot-country/blob/eee6967b4a51589da0d6d22dbde61b8a928ee3e8/contracts/contracts/DC.sol#L93) 
+2. Implement uri method point to MetadataService in BaseRegistrarImplementation
+3. Migration and deployment (with batch initialization) scripts, similar to [https://github.com/harmony-one/dot-country/blob/main/contracts/scripts/dump.ts](https://github.com/harmony-one/dot-country/blob/main/contracts/scripts/dump.ts)  and [https://github.com/harmony-one/dot-country/blob/eee6967b4a51589da0d6d22dbde61b8a928ee3e8/contracts/deploy/00_deploy_DC.ts#L39](https://github.com/harmony-one/dot-country/blob/eee6967b4a51589da0d6d22dbde61b8a928ee3e8/contracts/deploy/00_deploy_DC.ts#L39) 
+ can be deleted
