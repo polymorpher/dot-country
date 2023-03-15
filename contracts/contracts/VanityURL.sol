@@ -12,14 +12,14 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
     /// @dev DC contract
     address public dc;
 
-    /// @dev DC TokenId -> Timestamp the name owner was updated
-    mapping(bytes32 => uint256) public nameOwnerUpdateAt;
-
     /// @dev DC TokenId -> Alias Name -> URL
     mapping(bytes32 => mapping(string => string)) public vanityURLs;
 
-    /// @dev DC Token Id -> Alias Name -> Timestamp the URL was updated
-    /// @dev Vanity URL is valid only if nameOwnerUpdateAt <= vanityURLUpdatedAt
+    /// @dev DC TokenId -> Alias Name -> Content Price
+    mapping(bytes32 => mapping(string => uint256)) public vanityURLPrices;
+
+    /// @dev DC Token Id -> Alias Name -> Timestamp when the URL was updated
+    /// @dev Vanity URL is valid only if domainRegistrationAt <= vanityURLUpdatedAt
     mapping(bytes32 => mapping(string => uint256)) public vanityURLUpdatedAt;
 
     /// @dev Price for the url update
@@ -27,11 +27,6 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
 
     /// @dev Fee withdrawal address
     address public revenueAccount;
-
-    ///////////////////////////////////////////// Contract Upgrade /////////////////////////////////////////////
-
-    /// @dev DC TokenId -> Alias Name -> Content Price
-    mapping(bytes32 => mapping(string => uint256)) public vanityURLPrices;
 
     event NewURLSet(address by, string indexed name, string indexed aliasName, string indexed url, uint256 price);
     event URLDeleted(address by, string indexed name, string indexed aliasName, string indexed url);
@@ -74,13 +69,6 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
         revenueAccount = _revenueAccount;
     }
 
-    // function setNameOwnerUpdateAt(bytes32 _d1dcV2TokenId) external {
-    //     address dc = addressRegistry.dc();
-    //     require(msg.sender == dc, "VanityURL: only DC");
-
-    //     nameOwnerUpdateAt[_d1dcV2TokenId] = block.timestamp;
-    // }
-
     function setNewURL(
         string calldata _name,
         string calldata _aliasName,
@@ -112,7 +100,7 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
     }
 
     function deleteURL(string calldata _name, string calldata _aliasName) external whenNotPaused onlyDCOwner(_name) {
-        require(checkURLValidity(_name, _aliasName), "VanityURL: invalid URL");
+        require(checkURLValidity(_name, _aliasName), "VanityURL: url not exist");
 
         bytes32 tokenId = keccak256(bytes(_name));
         string memory url = vanityURLs[tokenId][_aliasName];
