@@ -18,8 +18,8 @@ const initConfiguration = {
   nameWrapper: config.nameWrapper,
   baseRegistrar: config.registrar,
   resolver: config.resolver,
-  reverseRecord: config.reverseRecord
-
+  reverseRecord: config.reverseRecord,
+  duration: config.duration
 }
 console.log(`initConfiguration: ${JSON.stringify(initConfiguration)}`)
 
