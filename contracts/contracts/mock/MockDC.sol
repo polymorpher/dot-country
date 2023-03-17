@@ -19,6 +19,10 @@ contract MockDC {
         expires[name] = block.timestamp + DURATION;
     }
 
+    function duration() external pure returns (uint256) {
+        return DURATION;
+    }
+
     function nameExpires(string calldata name) external view returns (uint256) {
         return expires[name];
     }
