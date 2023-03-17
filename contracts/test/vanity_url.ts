@@ -5,7 +5,7 @@ import config from '../config'
 
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 
-import type { DC, VanityURL } from "../typechain-types"
+import type { MockDC, VanityURL } from "../typechain-types"
 
 const maxWrapperExpiry = ethers.BigNumber.from(new Uint8Array(8).fill(255)).toString()
 const initConfiguration = {
@@ -18,6 +18,7 @@ const initConfiguration = {
   reverseRecord: config.reverseRecord,
   duration: config.duration
 }
+const dotName = 'test.1.country'
 const urlUpdatePrice = ethers.utils.parseEther("1");
 
 const getTimestamp = async (): Promise<BigNumber> => {
@@ -33,20 +34,20 @@ describe('VanityURL', () => {
   let bob: SignerWithAddress;
   let revenueAccount: SignerWithAddress;
 
-  let dc: DC;
+  let mockDC: MockDC;
   let vanityURL: VanityURL;
 
   beforeEach(async () => {
     accounts = await ethers.getSigners();
     [deployer, alice, bob, revenueAccount] = accounts;
 
-    // Deploy DC contract
-    const DC = await ethers.getContractFactory('DC');
-    dc = (await DC.deploy(initConfiguration)) as DC;
+    // Deploy MockDC contract
+    const MockDC = await ethers.getContractFactory('MockDC');
+    mockDC = (await MockDC.deploy(initConfiguration)) as MockDC;
 
     // Deploy VanityURL contract
     const VanityURL = await ethers.getContractFactory("VanityURL");
-    vanityURL = (await VanityURL.deploy(dc.address, urlUpdatePrice, revenueAccount.address)) as VanityURL;
+    vanityURL = (await VanityURL.deploy(mockDC.address, urlUpdatePrice, revenueAccount.address)) as VanityURL;
   });
 
   describe("setRevenueAccount", () => {
@@ -70,7 +71,7 @@ describe('VanityURL', () => {
   //   const price = ethers.utils.parseEther("2");
 
   //   beforeEach(async () => {
-  //     await d1dcV2.connect(alice).rent(dotName, url, telegram, email, phone, { value: baseRentalPrice });
+  //     await dc.connect(alice).rent(dotName, url, telegram, email, phone, { value: baseRentalPrice });
   //   });
 
   //   it("Should be ale to set a new URL", async () => {
@@ -86,7 +87,7 @@ describe('VanityURL', () => {
   //   });
 
   //   it("Should revert if the caller is not the name owner", async () => {
-  //     await expect(vanityURL.setNewURL(dotName, aliasName, url, price, { value: urlUpdatePrice })).to.be.revertedWith("VanityURL: only D1DCV2 name owner");
+  //     await expect(vanityURL.setNewURL(dotName, aliasName, url, price, { value: urlUpdatePrice })).to.be.revertedWith("VanityURL: only dc name owner");
   //   });
 
   //   it("Should revert if the URL already exists", async () => {
@@ -109,7 +110,7 @@ describe('VanityURL', () => {
   //   const price = ethers.utils.parseEther("2");
 
   //   beforeEach(async () => {
-  //     await d1dcV2.connect(alice).rent(dotName, url, telegram, email, phone, { value: baseRentalPrice });
+  //     await dc.connect(alice).rent(dotName, url, telegram, email, phone, { value: baseRentalPrice });
   //     await vanityURL.connect(alice).setNewURL(dotName, aliasName, url, price, { value: urlUpdatePrice });
   //   });
 
@@ -128,7 +129,7 @@ describe('VanityURL', () => {
   //   });
 
   //   it("Should revert if the caller is not the name owner", async () => {
-  //     await expect(vanityURL.deleteURL(dotName, aliasName)).to.be.revertedWith("VanityURL: only D1DCV2 name owner");
+  //     await expect(vanityURL.deleteURL(dotName, aliasName)).to.be.revertedWith("VanityURL: only dc name owner");
   //   });
 
   //   it("Should revert if the URL to delete doesn't exist", async () => {
@@ -145,7 +146,7 @@ describe('VanityURL', () => {
   //   const newPrice = ethers.utils.parseEther("3");
 
   //   beforeEach(async () => {
-  //     await d1dcV2.connect(alice).rent(dotName, url, telegram, email, phone, { value: baseRentalPrice });
+  //     await dc.connect(alice).rent(dotName, url, telegram, email, phone, { value: baseRentalPrice });
   //     await vanityURL.connect(alice).setNewURL(dotName, aliasName, url, price, { value: urlUpdatePrice });
   //   });
   
@@ -170,12 +171,12 @@ describe('VanityURL', () => {
 
   //   it("Should revert if the caller is not the name owner", async () => {
   //     const newURL = "newURL";
-  //     await expect(vanityURL.updateURL(dotName, aliasName, newURL, price)).to.be.revertedWith("VanityURL: only D1DCV2 name owner");
+  //     await expect(vanityURL.updateURL(dotName, aliasName, newURL, price)).to.be.revertedWith("VanityURL: only dc name owner");
   //   });
 
   //   it("Should revert if the URL to update is invalid", async () => {
   //     // transfer the NFT
-  //     await d1dcV2.connect(alice)["safeTransferFrom(address,address,uint256)"](alice.address, bob.address, tokenId);
+  //     await dc.connect(alice)["safeTransferFrom(address,address,uint256)"](alice.address, bob.address, tokenId);
 
   //     const newURL = "newURL";
   //     await expect(vanityURL.connect(bob).updateURL(dotName, aliasName, newURL, price)).to.be.revertedWith("VanityURL: invalid URL");
@@ -189,7 +190,7 @@ describe('VanityURL', () => {
   //   const price = ethers.utils.parseEther("2");
 
   //   beforeEach(async () => {
-  //     await d1dcV2.connect(alice).rent(dotName, url, telegram, email, phone, { value: baseRentalPrice });
+  //     await dc.connect(alice).rent(dotName, url, telegram, email, phone, { value: baseRentalPrice });
   //     await vanityURL.connect(alice).setNewURL(dotName, aliasName, url, price, { value: urlUpdatePrice });
   //   });
 
