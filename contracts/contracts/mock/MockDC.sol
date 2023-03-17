@@ -19,6 +19,10 @@ contract MockDC {
         expires[name] = block.timestamp + DURATION;
     }
 
+    function trasnferDomain(string calldata name) external {
+        owners[name] = msg.sender;
+    }
+
     function duration() external pure returns (uint256) {
         return DURATION;
     }
