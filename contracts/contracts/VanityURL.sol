@@ -46,6 +46,12 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
         _;
     }
 
+    modifier whenDomainNotExpired(string memory _name) {
+        uint256 domainExpireAt = IDC(dc).nameExpires(_name);
+        require(block.timestamp < domainExpireAt, "VanityURL: expired domain");
+        _;
+    }
+
     constructor(address _dc, uint256 _urlUpdatePrice, address _revenueAccount) {
         require(_dc != address(0), "VanityURL: zero address");
         require(_revenueAccount != address(0), "VanityURL: zero address");
@@ -55,26 +61,39 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
         revenueAccount = _revenueAccount;
     }
 
+    /// @notice Set the DC contract address
+    /// @param _dc DC contract address
     function setDCAddress(address _dc) external onlyOwner {
         dc = _dc;
     }
 
+    /// @notice Set the price for the URL update
+    /// @param _urlUpdatePrice price for the URL update
     function setURLUpdatePrice(uint256 _urlUpdatePrice) external onlyOwner {
         urlUpdatePrice = _urlUpdatePrice;
     }
 
+    /// @notice Set the revenue account
+    /// @param _revenueAccount revenue account address
     function setRevenueAccount(address _revenueAccount) public onlyOwner {
         emit RevenueAccountChanged(revenueAccount, _revenueAccount);
 
         revenueAccount = _revenueAccount;
     }
 
+    /// @notice Set a new URL
+    /// @dev If the domain is expired, all the vanity URL info is erased
+    /// @dev If the domain ownership is transferred but not expired, all the vanity URL info is kept
+    /// @param _name domain name
+    /// @param _aliasName alias name for the URL
+    /// @param _url URL address to be redirected
+    /// @param _price Price to paid for the URL access
     function setNewURL(
         string calldata _name,
         string calldata _aliasName,
         string calldata _url,
         uint256 _price
-    ) external payable nonReentrant whenNotPaused onlyDCOwner(_name) {
+    ) external payable nonReentrant whenNotPaused onlyDCOwner(_name) whenDomainNotExpired(_name) {
         require(bytes(_aliasName).length <= 1024, "VanityURL: alias too long");
         require(bytes(_url).length <= 1024, "VanityURL: url too long");
 
@@ -99,6 +118,10 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
         emit NewURLSet(msg.sender, _name, _aliasName, _url, _price);
     }
 
+    /// @notice Delete the existing URL
+    /// @dev Deleting the URL is available regardless the domain expiration
+    /// @param _name domain name
+    /// @param _aliasName alias name for the URL to delete
     function deleteURL(string calldata _name, string calldata _aliasName) external whenNotPaused onlyDCOwner(_name) {
         require(checkURLValidity(_name, _aliasName), "VanityURL: url not exist");
 
@@ -113,12 +136,18 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
         emit URLDeleted(msg.sender, _name, _aliasName, url);
     }
 
+    /// @notice Update the existing URL
+    /// @dev Updating the URL is not available if the domain is expired
+    /// @param _name domain name
+    /// @param _aliasName alias name for the URL
+    /// @param _url URL address to be redirected
+    /// @param _price Price to paid for the URL access
     function updateURL(
         string calldata _name,
         string calldata _aliasName,
         string calldata _url,
         uint256 _price
-    ) external whenNotPaused onlyDCOwner(_name) {
+    ) external whenNotPaused onlyDCOwner(_name) whenDomainNotExpired(_name) {
         bytes32 tokenId = keccak256(bytes(_name));
 
         require(bytes(_url).length <= 1024, "VanityURL: url too long");
@@ -132,18 +161,38 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
         vanityURLUpdatedAt[tokenId][_aliasName] = block.timestamp;
     }
 
+    /// @notice Returns the URL corresponding to the alias name
+    /// @dev If the domain is expired, returns empty string
+    /// @param _name domain name
+    /// @param _aliasName alias name for the URL
     function getURL(string calldata _name, string calldata _aliasName) external view returns (string memory) {
-        bytes32 tokenId = keccak256(bytes(_name));
+        if (IDC(dc).nameExpires(_name) < block.timestamp) {
+            return "";
+        } else {
+            bytes32 tokenId = keccak256(bytes(_name));
 
-        return vanityURLs[tokenId][_aliasName];
+            return vanityURLs[tokenId][_aliasName];
+        }
     }
 
+    /// @notice Returns the price for the vanity URL access
+    /// @dev If the domain is expired, returns 0
+    /// @param _name domain name
+    /// @param _aliasName alias name for the URL
     function getPrice(string calldata _name, string calldata _aliasName) external view returns (uint256) {
-        bytes32 tokenId = keccak256(bytes(_name));
+        if (IDC(dc).nameExpires(_name) < block.timestamp) {
+            return 0;
+        } else {
+            bytes32 tokenId = keccak256(bytes(_name));
 
-        return vanityURLPrices[tokenId][_aliasName];
+            return vanityURLPrices[tokenId][_aliasName];
+        }
     }
 
+    /// @notice Returns the validity of the vanity URL
+    /// @dev If the domain is renewed, all the vanity URLs of the old domain are invalid
+    /// @param _name domain name
+    /// @param _aliasName alias name for the URL
     function checkURLValidity(string memory _name, string memory _aliasName) public view returns (bool) {
         bytes32 tokenId = keccak256(bytes(_name));
         uint256 domainRegistrationAt = IDC(dc).nameExpires(_name) - IDC(dc).duration();
@@ -151,16 +200,20 @@ contract VanityURL is Ownable, Pausable, ReentrancyGuard {
         return domainRegistrationAt < vanityURLUpdatedAt[tokenId][_aliasName] ? true : false;
     }
 
+    /// @notice Withdraw funds
+    /// @dev Only owner of the revenue account can withdraw funds
     function withdraw() external {
         require(msg.sender == owner() || msg.sender == revenueAccount, "D1DC: must be owner or revenue account");
         (bool success, ) = revenueAccount.call{value: address(this).balance}("");
         require(success, "D1DC: failed to withdraw");
     }
 
+    /// @notice Pause the contract
     function pause() external onlyOwner {
         _pause();
     }
 
+    /// @notice Unpause the contract
     function unpause() external onlyOwner {
         _unpause();
     }
